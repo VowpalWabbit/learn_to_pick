@@ -397,7 +397,7 @@ class RLLoop(Generic[TEvent]):
             )
         if self.metrics:
             self.metrics.on_feedback(score)
-        event: TEvent = chain_response["selection_metadata"]
+        event: TEvent = chain_response["picked_metadata"]
         self._call_after_scoring_before_learning(event=event, score=score)
         self.active_policy.learn(event=event)
         self.active_policy.log(event=event)
