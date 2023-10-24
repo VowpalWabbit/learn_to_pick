@@ -12,6 +12,11 @@ setup(
         'pyskiplist',
         'parameterfree',
     ],
+    extras_require={
+        'dev': [
+            'pytest'
+        ]
+    },
     author="VowpalWabbit",
     description="",
     packages=find_packages(where="src"),

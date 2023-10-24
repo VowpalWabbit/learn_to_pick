@@ -108,7 +108,7 @@ def get_based_on_and_to_select_from(inputs: Dict[str, Any]) -> Tuple[Dict, Dict]
 
     if not to_select_from:
         raise ValueError(
-            "No variables using 'ToSelectFrom' found in the inputs. Please include at least one variable containing a list to select from." 
+            "No variables using 'ToSelectFrom' found in the inputs. Please include at least one variable containing a list to select from."
         )
 
     based_on = {
@@ -124,7 +124,7 @@ def prepare_inputs_for_autoembed(inputs: Dict[str, Any]) -> Dict[str, Any]:
     """
     go over all the inputs and if something is either wrapped in _ToSelectFrom or _BasedOn, and if their inner values are not already _Embed,
     then wrap them in EmbedAndKeep while retaining their _ToSelectFrom or _BasedOn status
-    """ 
+    """
 
     next_inputs = inputs.copy()
     for k, v in next_inputs.items():
@@ -237,7 +237,7 @@ class SelectionScorer(Generic[TEvent], ABC):
 
 
 class AutoSelectionScorer(SelectionScorer[Event]):
-    def __init__(self, 
+    def __init__(self,
                  llm,
                  prompt: Union[str, None] = None,
                  scoring_criteria_template_str: Optional[str] = None):
@@ -275,7 +275,7 @@ class AutoSelectionScorer(SelectionScorer[Event]):
             return resp
         except Exception as e:
             raise RuntimeError(
-                f"The auto selection scorer did not manage to score the response, there is always the option to try again or tweak the reward prompt. Error: {e}" 
+                f"The auto selection scorer did not manage to score the response, there is always the option to try again or tweak the reward prompt. Error: {e}"
             )
 
 
@@ -377,14 +377,14 @@ class RLLoop(Generic[TEvent]):
         """
         Updates the learned policy with the score provided.
         Will raise an error if selection_scorer is set, and force_score=True was not provided during the method call
-        """ 
+        """
         if self._can_use_selection_scorer() and not force_score:
             raise RuntimeError(
-                "The selection scorer is set, and force_score was not set to True. Please set force_score=True to use this function." 
+                "The selection scorer is set, and force_score was not set to True. Please set force_score=True to use this function."
             )
         if self.metrics:
             self.metrics.on_feedback(score)
-        event: TEvent = chain_response["selection_metadata"]
+        event: TEvent = chain_response["picked_metadata"]
         self._call_after_scoring_before_learning(event=event, score=score)
         self.active_policy.learn(event=event)
         self.active_policy.log(event=event)
@@ -392,19 +392,19 @@ class RLLoop(Generic[TEvent]):
     def deactivate_selection_scorer(self) -> None:
         """
         Deactivates the selection scorer, meaning that the chain will no longer attempt to use the selection scorer to score responses.
-        """ 
+        """
         self.selection_scorer_activated = False
 
     def activate_selection_scorer(self) -> None:
         """
         Activates the selection scorer, meaning that the chain will attempt to use the selection scorer to score responses.
-        """ 
+        """
         self.selection_scorer_activated = True
 
     def save_progress(self) -> None:
         """
         This function should be called to save the state of the learned policy model.
-        """ 
+        """
         self.active_policy.save()
 
     def _validate_inputs(self, inputs: Dict[str, Any]) -> None:
@@ -414,13 +414,13 @@ class RLLoop(Generic[TEvent]):
             or self.selected_based_on_input_key in inputs.keys()
         ):
             raise ValueError(
-                f"The rl chain does not accept '{self.selected_input_key}' or '{self.selected_based_on_input_key}' as input keys, they are reserved for internal use during auto reward." 
+                f"The rl chain does not accept '{self.selected_input_key}' or '{self.selected_based_on_input_key}' as input keys, they are reserved for internal use during auto reward."
             )
 
     def _can_use_selection_scorer(self) -> bool:
         """
         Returns whether the chain can use the selection scorer to score responses or not.
-        """ 
+        """
         return self.selection_scorer is not None and self.selection_scorer_activated
 
     @abstractmethod
@@ -505,7 +505,7 @@ def embed_string_type(
 
     if namespace is None:
         raise ValueError(
-            "The default namespace must be provided when embedding a string or _Embed object." 
+            "The default namespace must be provided when embedding a string or _Embed object."
         )
 
     return {namespace: keep_str + encoded}
@@ -558,7 +558,7 @@ def embed(
         model: (Any, required) The model to use for embedding
     Returns:
         List[Dict[str, str]]: A list of dictionaries where each dictionary has the namespace as the key and the embedded string as the value
-    """ 
+    """
     if (isinstance(to_embed, _Embed) and isinstance(to_embed.value, str)) or isinstance(
         to_embed, str
     ):
