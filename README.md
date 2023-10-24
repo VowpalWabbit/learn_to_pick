@@ -43,6 +43,14 @@ result = picker.run(pick = learn_to_pick.ToSelectFrom(["option1", "option2"]),
 print(result["picked"])
 ```
 
+The picker will:
+
+- Make a selection using the decision making policy
+- Call the scorer to evaluate the decision
+- Update the decision making policy with the score
+
+Note: callback functions can be registered at create time and they will be called after the decision has been made and before the scorer is called (see `prompt_variable_injection.ipynb` for example usage)
+
 Example usage with custom scorer:
 
 ```python

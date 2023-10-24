@@ -258,9 +258,9 @@ class AutoSelectionScorer(SelectionScorer[Event]):
 
     @staticmethod
     def get_default_prompt() -> str:
-        human_template = """Given this based_on "{rl_chain_selected_based_on}" \
+        human_template = """Given this based_on "{pick_best_selected_based_on}" \
             as the most important attribute, rank how good or bad this text is: \
-                "{rl_chain_selected}"."""
+                "{pick_best_selected}"."""
         default_system_prompt = AutoSelectionScorer.get_default_system_prompt()
         return default_system_prompt + human_template
 
@@ -326,8 +326,8 @@ class RLLoop(Generic[TEvent]):
             pass
 
     # Define the default values as class attributes
-    selected_input_key = "rl_chain_selected"
-    selected_based_on_input_key = "rl_chain_selected_based_on"
+    selected_input_key = "pick_best_selected"
+    selected_based_on_input_key = "pick_best_selected_based_on"
 
     def __init__(
         self,
