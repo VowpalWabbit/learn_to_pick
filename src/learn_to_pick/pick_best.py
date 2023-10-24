@@ -265,12 +265,11 @@ class PickBest(base.RLLoop[PickBestEvent]):
 
     def __init__(
         self,
-        *args: Any,
+        feature_embedder = None,
+        vw_cmd = None,
         **kwargs: Any,
     ):
         auto_embed = kwargs.get("auto_embed", False)
-
-        feature_embedder = kwargs.get("feature_embedder", None)
         if feature_embedder:
             if "auto_embed" in kwargs:
                 logger.warning(
@@ -280,9 +279,9 @@ class PickBest(base.RLLoop[PickBestEvent]):
             auto_embed = False
         else:
             feature_embedder = PickBestFeatureEmbedder(auto_embed=auto_embed)
-        kwargs["feature_embedder"] = feature_embedder
+        kwargs.pop('auto_embed', None)
 
-        vw_cmd = kwargs.get("vw_cmd", [])
+        vw_cmd = vw_cmd or []
         if vw_cmd:
             if "--cb_explore_adf" not in vw_cmd:
                 raise ValueError(
@@ -303,9 +302,7 @@ class PickBest(base.RLLoop[PickBestEvent]):
                 "--quiet",
             ]
 
-        kwargs["vw_cmd"] = vw_cmd
-
-        super().__init__(*args, **kwargs)
+        super().__init__(vw_cmd = vw_cmd, feature_embedder = feature_embedder, **kwargs)
 
     def _call_before_predict(self, inputs: Dict[str, Any]) -> PickBestEvent:
         context, actions = base.get_based_on_and_to_select_from(inputs=inputs)
@@ -348,7 +345,7 @@ class PickBest(base.RLLoop[PickBestEvent]):
         # only one key, value pair in event.to_select_from
         key, value = next(iter(event.to_select_from.items()))
         next_inputs = inputs.copy()
-        next_inputs.update({key: value[event.selected.index]})
+        next_inputs[key] = value[event.selected.index]
 
         # only one key, value pair in event.to_select_from
         value = next(iter(event.to_select_from.values()))
@@ -357,12 +354,8 @@ class PickBest(base.RLLoop[PickBestEvent]):
             if event.selected
             else event.to_select_from.values()
         )
-        next_inputs.update(
-            {
-                self.selected_based_on_input_key: str(event.based_on),
-                self.selected_input_key: v,
-            }
-        )
+        next_inputs[self.selected_based_on_input_key] = str(event.based_on)
+        next_inputs[self.selected_input_key] = v
         return next_inputs, event
 
     def _call_after_scoring_before_learning(
@@ -372,8 +365,8 @@ class PickBest(base.RLLoop[PickBestEvent]):
             event.selected.score = score
         return event
 
-    def run(self, *args, **kwargs) -> Dict[str, Any]:
-        return super().run(*args, **kwargs)
+    def run(self, **kwargs) -> Dict[str, Any]:
+        return super().run(**kwargs)
 
     @classmethod
     def create(

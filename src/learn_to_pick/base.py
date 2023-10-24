@@ -146,6 +146,7 @@ TSelected = TypeVar("TSelected", bound=Selected)
 
 class Event(Generic[TSelected], ABC):
     inputs: Dict[str, Any]
+    outputs: Dict[str, Any]
     selected: Optional[TSelected]
 
     def __init__(self, inputs: Dict[str, Any], selected: Optional[TSelected] = None):
@@ -239,7 +240,7 @@ class SelectionScorer(Generic[TEvent], ABC):
 class AutoSelectionScorer(SelectionScorer[Event]):
     def __init__(self,
                  llm,
-                 prompt: Union[str, None] = None,
+                 prompt: Union[Any, None] = None,
                  scoring_criteria_template_str: Optional[str] = None):
         self.llm = llm
         self.prompt = prompt
@@ -263,11 +264,21 @@ class AutoSelectionScorer(SelectionScorer[Event]):
         default_system_prompt = AutoSelectionScorer.get_default_system_prompt()
         return default_system_prompt + human_template
 
+    @staticmethod
+    def format_with_ignoring_extra_args(prompt, inputs):
+        import string
+        # Extract placeholders from the prompt
+        placeholders = [field[1] for field in string.Formatter().parse(str(prompt)) if field[1]]
+
+        # Keep only the inputs that have corresponding placeholders in the prompt
+        relevant_inputs = {k: v for k, v in inputs.items() if k in placeholders}
+
+        return prompt.format(**relevant_inputs)
+
     def score_response(
         self, inputs: Dict[str, Any], event: Event
     ) -> float:
-        p = self.prompt.format(**inputs)
-        # pp = {"content": p, "role": "system"}
+        p = AutoSelectionScorer.format_with_ignoring_extra_args(self.prompt, inputs)
         ranking = self.llm.predict(p)
         ranking = ranking.strip()
         try:
@@ -286,7 +297,6 @@ class RLLoop(Generic[TEvent]):
     Attributes:
         - selection_scorer (Union[SelectionScorer, None]): Scorer for the selection. Can be set to None.
         - policy (Optional[Policy]): The policy used by the chain to learn to populate a dynamic prompt.
-        - auto_embed (bool): Determines if embedding should be automatic. Default is False.
         - metrics (Optional[Union[MetricsTrackerRollingWindow, MetricsTrackerAverage]]): Tracker for metrics, can be set to None.
 
     Initialization Attributes:
@@ -329,10 +339,10 @@ class RLLoop(Generic[TEvent]):
         policy: Type[Policy] = VwPolicy,
         active_policy: Optional[Policy] = _NoOpPolicy(),
         vw_logs: Optional[Union[str, os.PathLike]] = None,
-        auto_embed: bool = False,
         selection_scorer_activated: bool = True,
         metrics_step: int = -1,
         metrics_window_size: int = -1,
+        callbacks_before_scoring: list = [],
     ):
         self.selection_scorer = selection_scorer
         self.feature_embedder = feature_embedder
@@ -342,10 +352,10 @@ class RLLoop(Generic[TEvent]):
         self.policy = policy
         self.active_policy = active_policy
         self.vw_logs = vw_logs
-        self.auto_embed = auto_embed
         self.selection_scorer_activated = selection_scorer_activated
         self.metrics_step = metrics_step
         self.metrics_window_size = metrics_window_size
+        self.callbacks_before_scoring = callbacks_before_scoring
 
         if self.selection_scorer is None:
             logger.warning(
@@ -458,6 +468,14 @@ class RLLoop(Generic[TEvent]):
             inputs=inputs, event=event, prediction=prediction
         )
 
+        for callback_func in self.callbacks_before_scoring:
+            try:
+                next_chain_inputs, event = callback_func(next_chain_inputs, event)
+            except Exception as e:
+                logger.info(
+                    f"Callback function {callback_func} failed, error: {e}"
+                )
+
         score = None
         try:
             if self._can_use_selection_scorer():
@@ -480,6 +498,7 @@ class RLLoop(Generic[TEvent]):
         for k, v in event.to_select_from.items():
             picked.append({k: v[event.selected.index]})
 
+        event.outputs = next_chain_inputs
         return {"picked": picked, "picked_metadata": event}
 
 def is_stringtype_instance(item: Any) -> bool:
