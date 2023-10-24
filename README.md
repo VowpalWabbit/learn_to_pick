@@ -1,5 +1,3 @@
-# learn_to_pick
-
 ## Introduction
 
 `learn_to_pick` is a versatile Python library crafted for online learning in Reinforcement Learning (RL) loops. Specifically designed for Contextual Bandits, it allows you to choose an action from a set of possibilities based on certain criteria. After making a decision, you have multiple ways to evaluate its effectiveness and provide feedback back into the system, so that it can do better next time:
@@ -8,11 +6,11 @@
 - Use a custom score function to grade the decision.
 - Directly specify the score manually and asynchronously.
 
-The beauty of `learn_to_pick` is its flexibility. Whether you're a fan of VowpalWabbit or prefer PyTorch, the library can seamlessly integrate with both, allowing them to be the brain behind your decisions.
+The beauty of `learn_to_pick` is its flexibility. Whether you're a fan of VowpalWabbit or prefer PyTorch (coming soon), the library can seamlessly integrate with both, allowing them to be the brain behind your decisions.
 
 ## Installation
 
-`pip install learn_to_pick`
+`pip install .`
 
 ## Usage
 
