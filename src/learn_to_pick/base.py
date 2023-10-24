@@ -297,7 +297,6 @@ class RLLoop(Generic[TEvent]):
     Attributes:
         - selection_scorer (Union[SelectionScorer, None]): Scorer for the selection. Can be set to None.
         - policy (Optional[Policy]): The policy used by the chain to learn to populate a dynamic prompt.
-        - auto_embed (bool): Determines if embedding should be automatic. Default is False.
         - metrics (Optional[Union[MetricsTrackerRollingWindow, MetricsTrackerAverage]]): Tracker for metrics, can be set to None.
 
     Initialization Attributes:
@@ -340,7 +339,6 @@ class RLLoop(Generic[TEvent]):
         policy: Type[Policy] = VwPolicy,
         active_policy: Optional[Policy] = _NoOpPolicy(),
         vw_logs: Optional[Union[str, os.PathLike]] = None,
-        auto_embed: bool = False,
         selection_scorer_activated: bool = True,
         metrics_step: int = -1,
         metrics_window_size: int = -1,
@@ -354,7 +352,6 @@ class RLLoop(Generic[TEvent]):
         self.policy = policy
         self.active_policy = active_policy
         self.vw_logs = vw_logs
-        self.auto_embed = auto_embed
         self.selection_scorer_activated = selection_scorer_activated
         self.metrics_step = metrics_step
         self.metrics_window_size = metrics_window_size

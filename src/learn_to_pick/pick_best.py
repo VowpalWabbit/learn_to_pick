@@ -263,12 +263,11 @@ class PickBest(base.RLLoop[PickBestEvent]):
 
     def __init__(
         self,
-        *args: Any,
+        feature_embedder = None,
+        vw_cmd = None,
         **kwargs: Any,
     ):
         auto_embed = kwargs.get("auto_embed", False)
-
-        feature_embedder = kwargs.get("feature_embedder", None)
         if feature_embedder:
             if "auto_embed" in kwargs:
                 logger.warning(
@@ -278,9 +277,9 @@ class PickBest(base.RLLoop[PickBestEvent]):
             auto_embed = False
         else:
             feature_embedder = PickBestFeatureEmbedder(auto_embed=auto_embed)
-        kwargs["feature_embedder"] = feature_embedder
+        kwargs.pop('auto_embed', None)
 
-        vw_cmd = kwargs.get("vw_cmd", [])
+        vw_cmd = vw_cmd or []
         if vw_cmd:
             if "--cb_explore_adf" not in vw_cmd:
                 raise ValueError(
@@ -301,9 +300,7 @@ class PickBest(base.RLLoop[PickBestEvent]):
                 "--quiet",
             ]
 
-        kwargs["vw_cmd"] = vw_cmd
-
-        super().__init__(*args, **kwargs)
+        super().__init__(vw_cmd = vw_cmd, feature_embedder = feature_embedder, **kwargs)
 
     def _call_before_predict(self, inputs: Dict[str, Any]) -> PickBestEvent:
         context, actions = base.get_based_on_and_to_select_from(inputs=inputs)
@@ -366,8 +363,8 @@ class PickBest(base.RLLoop[PickBestEvent]):
             event.selected.score = score
         return event
 
-    def run(self, *args, **kwargs) -> Dict[str, Any]:
-        return super().run(*args, **kwargs)
+    def run(self, **kwargs) -> Dict[str, Any]:
+        return super().run(**kwargs)
 
     @classmethod
     def create(
