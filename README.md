@@ -110,8 +110,8 @@ For the feedback mechanism there are three available options:
 
 In all three cases, when a score is calculated or provided, the decision making policy is updated in order to do better next time.
 
-
 ## Example Notebooks
 
 - `demo.ipynb` mostly showcases basic usage
 - `news_recommendation.ipynb` showcases a personalization scenario where we have to pick articles for specific users
+- `prompt_variable_injection.ipynb` showcases learned prompt variable injection and registering callback functionality
