@@ -354,7 +354,11 @@ class PickBest(base.RLLoop[PickBestEvent]):
         )
         next_inputs[self.selected_based_on_input_key] = str(event.based_on)
         next_inputs[self.selected_input_key] = v
-        return next_inputs, event
+        picked = []
+        for k, v in event.to_select_from.items():
+            picked.append({k: v[event.selected.index]})
+
+        return next_inputs, picked, event
 
     def _call_after_scoring_before_learning(
         self, event: PickBestEvent, score: Optional[float]

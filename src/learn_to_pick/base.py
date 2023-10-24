@@ -232,7 +232,7 @@ class SelectionScorer(Generic[TEvent], ABC):
 
     @abstractmethod
     def score_response(
-        self, inputs: Dict[str, Any], event: TEvent
+        self, inputs: Dict[str, Any], picked: list, event: TEvent
     ) -> float:
         ...
 
@@ -276,7 +276,7 @@ class AutoSelectionScorer(SelectionScorer[Event]):
         return prompt.format(**relevant_inputs)
 
     def score_response(
-        self, inputs: Dict[str, Any], event: Event
+        self, inputs: Dict[str, Any], picked: Any,  event: Event
     ) -> float:
         p = AutoSelectionScorer.format_with_ignoring_extra_args(self.prompt, inputs)
         ranking = self.llm.predict(p)
@@ -464,13 +464,13 @@ class RLLoop(Generic[TEvent]):
         if self.metrics:
             self.metrics.on_decision()
 
-        next_chain_inputs, event = self._call_after_predict_before_scoring(
+        next_chain_inputs, picked, event = self._call_after_predict_before_scoring(
             inputs=inputs, event=event, prediction=prediction
         )
 
         for callback_func in self.callbacks_before_scoring:
             try:
-                next_chain_inputs, event = callback_func(next_chain_inputs, event)
+                next_chain_inputs, picked, event = callback_func(next_chain_inputs, picked, event)
             except Exception as e:
                 logger.info(
                     f"Callback function {callback_func} failed, error: {e}"
@@ -480,7 +480,7 @@ class RLLoop(Generic[TEvent]):
         try:
             if self._can_use_selection_scorer():
                 score = self.selection_scorer.score_response(
-                    inputs=next_chain_inputs, event=event
+                    inputs=next_chain_inputs, picked=picked, event=event
                 )
         except Exception as e:
             logger.info(
@@ -493,10 +493,6 @@ class RLLoop(Generic[TEvent]):
         event = self._call_after_scoring_before_learning(score=score, event=event)
         self.active_policy.learn(event=event)
         self.active_policy.log(event=event)
-
-        picked = []
-        for k, v in event.to_select_from.items():
-            picked.append({k: v[event.selected.index]})
 
         event.outputs = next_chain_inputs
         return {"picked": picked, "picked_metadata": event}
