@@ -232,7 +232,7 @@ class SelectionScorer(Generic[TEvent], ABC):
 
     @abstractmethod
     def score_response(
-        self, inputs: Dict[str, Any], picked: list, event: TEvent
+        self, inputs: Dict[str, Any], picked: Any, event: TEvent
     ) -> float:
         ...
 
