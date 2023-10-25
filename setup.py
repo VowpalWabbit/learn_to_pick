@@ -11,7 +11,7 @@ setup(
     name="learn_to_pick",
     version=version,
     install_requires=[
-        "numpy>=1.26.1",
+        "numpy>=1.24.0",
         "pandas>=2.1.1",
         "vowpal-wabbit-next==0.7.0",
         "sentence-transformers>=2.2.2",
