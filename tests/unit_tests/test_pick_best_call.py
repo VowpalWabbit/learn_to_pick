@@ -356,28 +356,6 @@ def test_auto_scorer_with_user_defined_llm() -> None:
     assert picked_metadata.selected.score == 3  # type: ignore
 
 
-@pytest.mark.skip(reason="Is this stil needed?")
-@pytest.mark.requires("vowpal_wabbit_next", "sentence_transformers")
-def test_calling_chain_w_reserved_inputs_throws() -> None:
-    pick = learn_to_pick.PickBest.create(
-        llm=fake_llm_caller_with_score,
-        feature_embedder=learn_to_pick.PickBestFeatureEmbedder(
-            auto_embed=False, model=MockEncoder()
-        ),
-    )
-    with pytest.raises(ValueError):
-        pick.run(
-            User=learn_to_pick.BasedOn("Context"),
-            learn_to_pick_selected_based_on=learn_to_pick.ToSelectFrom(["0", "1", "2"]),
-        )
-
-    with pytest.raises(ValueError):
-        pick.run(
-            User=rl_loop.BasedOn("Context"),
-            learn_to_pick_selected=rl_loop.ToSelectFrom(["0", "1", "2"]),
-        )
-
-
 @pytest.mark.requires("vowpal_wabbit_next", "sentence_transformers")
 def test_activate_and_deactivate_scorer() -> None:
     llm = fake_llm_caller

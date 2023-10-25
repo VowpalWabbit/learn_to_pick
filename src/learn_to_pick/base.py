@@ -386,15 +386,6 @@ class RLLoop(Generic[TEvent]):
         """
         self.policy.save()
 
-    def _validate_inputs(self, inputs: Dict[str, Any]) -> None:
-        super()._validate_inputs(inputs)
-        if (
-            self.selected_input_key in inputs.keys()
-            or self.selected_based_on_input_key in inputs.keys()
-        ):
-            raise ValueError(
-                f"The rl chain does not accept '{self.selected_input_key}' or '{self.selected_based_on_input_key}' as input keys, they are reserved for internal use during auto reward."
-            )
 
     def _can_use_selection_scorer(self) -> bool:
         """
