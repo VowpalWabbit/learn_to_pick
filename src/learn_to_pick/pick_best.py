@@ -340,7 +340,7 @@ class PickBest(base.RLLoop[PickBestEvent]):
     def create(
         cls: Type[PickBest],
         policy: Optional[base.Policy] = None,
-        llm = None,
+        llm=None,
         selection_scorer: Union[base.AutoSelectionScorer, object] = SENTINEL,
         **kwargs: Any,
     ) -> PickBest:
@@ -350,16 +350,16 @@ class PickBest(base.RLLoop[PickBestEvent]):
             selection_scorer = base.AutoSelectionScorer(llm=llm)
 
         policy_args = {
-            'feature_embedder': kwargs.pop('feature_embedder', None),
-            'vw_cmd': kwargs.pop('vw_cmd', None),
-            'model_save_dir': kwargs.pop('model_save_dir', "./"),
-            'reset_model': kwargs.pop('reset_model', False),
-            'vw_logs': kwargs.pop('vw_logs', None)
+            "feature_embedder": kwargs.pop("feature_embedder", None),
+            "vw_cmd": kwargs.pop("vw_cmd", None),
+            "model_save_dir": kwargs.pop("model_save_dir", "./"),
+            "reset_model": kwargs.pop("reset_model", False),
+            "vw_logs": kwargs.pop("vw_logs", None),
         }
 
         if policy and any(policy_args.values()):
             logger.warning(
-                f"{[k for k, v in policy_args.items() if v]} will be ignored since nontrivial policy is provided"
+                f"{[k for k, v in policy_args.items() if v]} will be ignored since nontrivial policy is provided, please set those arguments in the policy directly if needed"
             )
 
         return PickBest(
@@ -368,7 +368,6 @@ class PickBest(base.RLLoop[PickBestEvent]):
             **kwargs,
         )
 
-
     @staticmethod
     def create_policy(
         feature_embedder: Optional[base.Embedder] = None,
@@ -376,7 +375,8 @@ class PickBest(base.RLLoop[PickBestEvent]):
         model_save_dir: str = "./",
         reset_model: bool = False,
         vw_logs: Optional[Union[str, os.PathLike]] = None,
-        **kwargs):
+        **kwargs,
+    ):
         auto_embed = kwargs.get("auto_embed", False)
         if feature_embedder:
             if "auto_embed" in kwargs:
@@ -387,7 +387,7 @@ class PickBest(base.RLLoop[PickBestEvent]):
             auto_embed = False
         else:
             feature_embedder = PickBestFeatureEmbedder(auto_embed=auto_embed)
-        kwargs.pop('auto_embed', None)
+        kwargs.pop("auto_embed", None)
 
         vw_cmd = vw_cmd or []
         if vw_cmd:
@@ -410,13 +410,13 @@ class PickBest(base.RLLoop[PickBestEvent]):
                 "--quiet",
             ]
         return base.VwPolicy(
-                model_repo=base.ModelRepository(
-                    model_save_dir, with_history=True, reset=reset_model
-                ),
-                vw_cmd = vw_cmd,
-                feature_embedder=feature_embedder,
-                vw_logger=base.VwLogger(vw_logs),
-            )
+            model_repo=base.ModelRepository(
+                model_save_dir, with_history=True, reset=reset_model
+            ),
+            vw_cmd=vw_cmd,
+            feature_embedder=feature_embedder,
+            vw_logger=base.VwLogger(vw_logs),
+        )
 
     def _default_policy(self):
         return PickBest.create_policy()
