@@ -338,17 +338,24 @@ class PickBest(base.RLLoop[PickBestEvent]):
         policy: Optional[base.Policy] = None,
         llm = None,
         selection_scorer: Union[base.AutoSelectionScorer, object] = SENTINEL,
-        **kwargs: Any,
+        metrics_step: int = -1,
+        metrics_window_size: int = -1,
+        **policy_args: Any,
     ) -> PickBest:
         if selection_scorer is SENTINEL and llm is None:
             raise ValueError("Either llm or selection_scorer must be provided")
         elif selection_scorer is SENTINEL:
             selection_scorer = base.AutoSelectionScorer(llm=llm)
+        if policy and any(policy_args):
+            logger.warning(
+                f"{list(policy_args.keys())} will be ignored since nontrivial policy is provided" 
+            )
 
         return PickBest(
-            policy = policy,
-            selection_scorer=selection_scorer,
-            **kwargs,
+            policy = policy or PickBest.create_policy(**policy_args),
+            selection_scorer = selection_scorer,
+            metrics_step = metrics_step,
+            metrics_window_size = metrics_window_size,
         )
     
     @staticmethod
