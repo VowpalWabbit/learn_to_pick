@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 from typing import Any, Dict, List, Optional, Tuple, Type, Union
+import os
 
 from learn_to_pick import base
 
@@ -220,8 +221,8 @@ class PickBestFeatureEmbedder(base.Embedder[PickBestEvent]):
 
 
 class PickBestRandomPolicy(base.Policy[PickBestEvent]):
-    def __init__(self, feature_embedder: base.Embedder, **kwargs: Any):
-        self.feature_embedder = feature_embedder
+    def __init__(self):
+        ...
 
     def predict(self, event: PickBestEvent) -> List[Tuple[int, float]]:
         num_items = len(event.to_select_from)
@@ -263,44 +264,9 @@ class PickBest(base.RLLoop[PickBestEvent]):
 
     def __init__(
         self,
-        feature_embedder = None,
-        vw_cmd = None,
         **kwargs: Any,
     ):
-        auto_embed = kwargs.get("auto_embed", False)
-        if feature_embedder:
-            if "auto_embed" in kwargs:
-                logger.warning(
-                    "auto_embed will take no effect when explicit feature_embedder is provided" 
-                )
-            # turning auto_embed off for cli setting below
-            auto_embed = False
-        else:
-            feature_embedder = PickBestFeatureEmbedder(auto_embed=auto_embed)
-        kwargs.pop('auto_embed', None)
-
-        vw_cmd = vw_cmd or []
-        if vw_cmd:
-            if "--cb_explore_adf" not in vw_cmd:
-                raise ValueError(
-                    "If vw_cmd is specified, it must include --cb_explore_adf"
-                )
-        else:
-            interactions = ["--interactions=::"]
-            if auto_embed:
-                interactions = [
-                    "--interactions=@#",
-                    "--ignore_linear=@",
-                    "--ignore_linear=#",
-                ]
-            vw_cmd = interactions + [
-                "--cb_explore_adf",
-                "--coin",
-                "--squarecb",
-                "--quiet",
-            ]
-
-        super().__init__(vw_cmd = vw_cmd, feature_embedder = feature_embedder, **kwargs)
+        super().__init__(**kwargs)
 
     def _call_before_predict(self, inputs: Dict[str, Any]) -> PickBestEvent:
         context, actions = base.get_based_on_and_to_select_from(inputs=inputs)
@@ -369,16 +335,83 @@ class PickBest(base.RLLoop[PickBestEvent]):
     @classmethod
     def create(
         cls: Type[PickBest],
+        policy: Optional[base.Policy] = None,
         llm = None,
         selection_scorer: Union[base.AutoSelectionScorer, object] = SENTINEL,
-        **kwargs: Any,
+        metrics_step: int = -1,
+        metrics_window_size: int = -1,
+        **policy_args: Any,
     ) -> PickBest:
         if selection_scorer is SENTINEL and llm is None:
             raise ValueError("Either llm or selection_scorer must be provided")
         elif selection_scorer is SENTINEL:
             selection_scorer = base.AutoSelectionScorer(llm=llm)
+        if policy and any(policy_args):
+            logger.warning(
+                f"{list(policy_args.keys())} will be ignored since nontrivial policy is provided" 
+            )
 
         return PickBest(
-            selection_scorer=selection_scorer,
-            **kwargs,
+            policy = policy or PickBest.create_policy(**policy_args),
+            selection_scorer = selection_scorer,
+            metrics_step = metrics_step,
+            metrics_window_size = metrics_window_size,
         )
+    
+    @staticmethod
+    def create_policy(
+        feature_embedder: Optional[base.Embedder] = None,
+        vw_cmd: Optional[List[str]] = None,
+        model_save_dir: str = "./",
+        reset_model: bool = False,
+        vw_logs: Optional[Union[str, os.PathLike]] = None,
+        **kwargs):
+        auto_embed = kwargs.get("auto_embed", False)
+        if feature_embedder:
+            if "auto_embed" in kwargs:
+                logger.warning(
+                    "auto_embed will take no effect when explicit feature_embedder is provided" 
+                )
+            # turning auto_embed off for cli setting below
+            auto_embed = False
+        else:
+            feature_embedder = PickBestFeatureEmbedder(auto_embed=auto_embed)
+        kwargs.pop('auto_embed', None)
+
+        vw_cmd = vw_cmd or []
+        if vw_cmd:
+            if "--cb_explore_adf" not in vw_cmd:
+                raise ValueError(
+                    "If vw_cmd is specified, it must include --cb_explore_adf"
+                )
+        else:
+            interactions = ["--interactions=::"]
+            if auto_embed:
+                interactions = [
+                    "--interactions=@#",
+                    "--ignore_linear=@",
+                    "--ignore_linear=#",
+                ]
+            vw_cmd = interactions + [
+                "--cb_explore_adf",
+                "--coin",
+                "--squarecb",
+                "--quiet",
+            ]
+        return base.VwPolicy(
+                model_repo=base.ModelRepository(
+                    model_save_dir, with_history=True, reset=reset_model
+                ),
+                vw_cmd = [
+                    "--interactions=::",
+                    "--cb_explore_adf",
+                    "--coin",
+                    "--squarecb",
+                    "--quiet",
+                ],
+                feature_embedder=feature_embedder,
+                vw_logger=base.VwLogger(vw_logs),
+            )
+
+    def _default_policy(self):
+        return PickBest.create_policy()

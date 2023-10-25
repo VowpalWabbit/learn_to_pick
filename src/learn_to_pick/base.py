@@ -312,46 +312,21 @@ class RLLoop(Generic[TEvent]):
     Notes:
         By default the class initializes the VW model using the provided arguments. If `selection_scorer` is not provided, a warning is logged, indicating that no reinforcement learning will occur unless the `update_with_delayed_score` method is called.
     """
-
-    class _NoOpPolicy(Policy):
-        """Placeholder policy that does nothing"""
-
-        def predict(self, event: TEvent) -> Any:
-            return None
-
-        def learn(self, event: TEvent) -> None:
-            pass
-
-        def log(self, event: TEvent) -> None:
-            pass
-
     # Define the default values as class attributes
     selected_input_key = "rl_chain_selected"
     selected_based_on_input_key = "rl_chain_selected_based_on"
 
     def __init__(
         self,
-        feature_embedder: Embedder,
+        policy: Optional[Policy] = None,
         selection_scorer: Union[SelectionScorer, None] = None,
-        model_save_dir: str = "./",
-        reset_model: bool = False,
-        vw_cmd: Optional[List[str]] = None,
-        policy: Type[Policy] = VwPolicy,
-        active_policy: Optional[Policy] = _NoOpPolicy(),
-        vw_logs: Optional[Union[str, os.PathLike]] = None,
         selection_scorer_activated: bool = True,
         metrics_step: int = -1,
         metrics_window_size: int = -1,
         callbacks_before_scoring: list = [],
     ):
         self.selection_scorer = selection_scorer
-        self.feature_embedder = feature_embedder
-        self.model_save_dir = model_save_dir
-        self.reset_model = reset_model
-        self.vw_cmd = vw_cmd
-        self.policy = policy
-        self.active_policy = active_policy
-        self.vw_logs = vw_logs
+        self.policy = policy or self._default_policy()
         self.selection_scorer_activated = selection_scorer_activated
         self.metrics_step = metrics_step
         self.metrics_window_size = metrics_window_size
@@ -364,16 +339,6 @@ class RLLoop(Generic[TEvent]):
                         unless update_with_delayed_score is called."
             )
 
-        if isinstance(self.active_policy, RLLoop._NoOpPolicy):
-            self.active_policy = policy(
-                model_repo=ModelRepository(
-                    model_save_dir, with_history=True, reset=reset_model
-                ),
-                vw_cmd=vw_cmd or [],
-                feature_embedder=feature_embedder,
-                vw_logger=VwLogger(vw_logs),
-            )
-
         if metrics_window_size > 0:
             self.metrics = MetricsTrackerRollingWindow(
                 step=metrics_step, window_size=metrics_window_size
@@ -381,6 +346,10 @@ class RLLoop(Generic[TEvent]):
         else:
             self.metrics = MetricsTrackerAverage(step=metrics_step)
 
+    @abstractmethod
+    def _default_policy(self):
+        ...
+    
     def update_with_delayed_score(
         self, score: float, chain_response: Dict[str, Any], force_score: bool = False
     ) -> None:
@@ -396,8 +365,8 @@ class RLLoop(Generic[TEvent]):
             self.metrics.on_feedback(score)
         event: TEvent = chain_response["picked_metadata"]
         self._call_after_scoring_before_learning(event=event, score=score)
-        self.active_policy.learn(event=event)
-        self.active_policy.log(event=event)
+        self.policy.learn(event=event)
+        self.policy.log(event=event)
 
     def deactivate_selection_scorer(self) -> None:
         """
@@ -415,7 +384,7 @@ class RLLoop(Generic[TEvent]):
         """
         This function should be called to save the state of the learned policy model.
         """ 
-        self.active_policy.save()
+        self.policy.save()
 
     def _validate_inputs(self, inputs: Dict[str, Any]) -> None:
         super()._validate_inputs(inputs)
@@ -460,7 +429,7 @@ class RLLoop(Generic[TEvent]):
             raise ValueError("Either a dictionary positional argument or keyword arguments should be provided")
 
         event: TEvent = self._call_before_predict(inputs=inputs)
-        prediction = self.active_policy.predict(event=event)
+        prediction = self.policy.predict(event=event)
         if self.metrics:
             self.metrics.on_decision()
 
@@ -491,8 +460,8 @@ class RLLoop(Generic[TEvent]):
             self.metrics.on_feedback(score)
 
         event = self._call_after_scoring_before_learning(score=score, event=event)
-        self.active_policy.learn(event=event)
-        self.active_policy.log(event=event)
+        self.policy.learn(event=event)
+        self.policy.log(event=event)
 
         picked = []
         for k, v in event.to_select_from.items():
