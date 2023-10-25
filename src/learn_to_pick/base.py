@@ -15,10 +15,7 @@ from typing import (
     Union,
 )
 
-from learn_to_pick.metrics import (
-    MetricsTrackerAverage,
-    MetricsTrackerRollingWindow,
-)
+from learn_to_pick.metrics import MetricsTrackerAverage, MetricsTrackerRollingWindow
 from learn_to_pick.model_repository import ModelRepository
 from learn_to_pick.vw_logger import VwLogger
 
@@ -234,14 +231,12 @@ class SelectionScorer(Generic[TEvent], ABC):
     """
 
     @abstractmethod
-    def score_response(
-        self, inputs: Dict[str, Any], picked: Any, event: TEvent
-    ) -> Any:
+    def score_response(self, inputs: Dict[str, Any], picked: Any, event: TEvent) -> Any:
         """
         Calculate and return the score for the selected response.
 
         This is an abstract method and should be implemented by subclasses.
-        The method defines a blueprint for applying scoring logic based on the provided 
+        The method defines a blueprint for applying scoring logic based on the provided
         inputs, the selection made by the policy, and additional metadata from the event.
 
         Args:
@@ -256,10 +251,12 @@ class SelectionScorer(Generic[TEvent], ABC):
 
 
 class AutoSelectionScorer(SelectionScorer[Event]):
-    def __init__(self,
-                 llm,
-                 prompt: Union[Any, None] = None,
-                 scoring_criteria_template_str: Optional[str] = None):
+    def __init__(
+        self,
+        llm,
+        prompt: Union[Any, None] = None,
+        scoring_criteria_template_str: Optional[str] = None,
+    ):
         self.llm = llm
         self.prompt = prompt
         if prompt is None and scoring_criteria_template_str is None:
@@ -285,8 +282,11 @@ class AutoSelectionScorer(SelectionScorer[Event]):
     @staticmethod
     def format_with_ignoring_extra_args(prompt, inputs):
         import string
+
         # Extract placeholders from the prompt
-        placeholders = [field[1] for field in string.Formatter().parse(str(prompt)) if field[1]]
+        placeholders = [
+            field[1] for field in string.Formatter().parse(str(prompt)) if field[1]
+        ]
 
         # Keep only the inputs that have corresponding placeholders in the prompt
         relevant_inputs = {k: v for k, v in inputs.items() if k in placeholders}
@@ -294,7 +294,7 @@ class AutoSelectionScorer(SelectionScorer[Event]):
         return prompt.format(**relevant_inputs)
 
     def score_response(
-        self, inputs: Dict[str, Any], picked: Any,  event: Event
+        self, inputs: Dict[str, Any], picked: Any, event: Event
     ) -> float:
         p = AutoSelectionScorer.format_with_ignoring_extra_args(self.prompt, inputs)
         ranking = self.llm.predict(p)
@@ -337,6 +337,7 @@ class RLLoop(Generic[TEvent]):
     Notes:
         By default the class initializes the VW model using the provided arguments. If `selection_scorer` is not provided, a warning is logged, indicating that no reinforcement learning will occur unless the `update_with_delayed_score` method is called.
     """
+
     # Define the default values as class attributes
     selected_input_key = "pick_best_selected"
     selected_based_on_input_key = "pick_best_selected_based_on"
@@ -409,7 +410,6 @@ class RLLoop(Generic[TEvent]):
         """
         self.policy.save()
 
-
     def _can_use_selection_scorer(self) -> bool:
         """
         Returns whether the chain can use the selection scorer to score responses or not.
@@ -422,10 +422,7 @@ class RLLoop(Generic[TEvent]):
 
     @abstractmethod
     def _call_after_predict_before_scoring(
-        self,
-        inputs: Dict[str, Any],
-        event: Event,
-        prediction: List[Tuple[int, float]],
+        self, inputs: Dict[str, Any], event: Event, prediction: List[Tuple[int, float]]
     ) -> Tuple[Dict[str, Any], Event]:
         ...
 
@@ -448,7 +445,9 @@ class RLLoop(Generic[TEvent]):
         elif kwargs and not args:
             inputs = kwargs
         else:
-            raise ValueError("Either a dictionary positional argument or keyword arguments should be provided")
+            raise ValueError(
+                "Either a dictionary positional argument or keyword arguments should be provided"
+            )
 
         event: TEvent = self._call_before_predict(inputs=inputs)
         prediction = self.policy.predict(event=event)
@@ -461,11 +460,11 @@ class RLLoop(Generic[TEvent]):
 
         for callback_func in self.callbacks_before_scoring:
             try:
-                next_chain_inputs, event = callback_func(inputs=next_chain_inputs, picked=picked, event=event)
-            except Exception as e:
-                logger.info(
-                    f"Callback function {callback_func} failed, error: {e}"
+                next_chain_inputs, event = callback_func(
+                    inputs=next_chain_inputs, picked=picked, event=event
                 )
+            except Exception as e:
+                logger.info(f"Callback function {callback_func} failed, error: {e}")
 
         score = None
         try:
@@ -488,6 +487,7 @@ class RLLoop(Generic[TEvent]):
 
         event.outputs = next_chain_inputs
         return {"picked": picked, "picked_metadata": event}
+
 
 def is_stringtype_instance(item: Any) -> bool:
     """Helper function to check if an item is a string."""
