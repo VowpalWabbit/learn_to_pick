@@ -320,16 +320,16 @@ class PickBest(base.RLLoop[PickBestEvent]):
         )
         next_inputs[self.selected_based_on_input_key] = str(event.based_on)
         next_inputs[self.selected_input_key] = v
-        picked = []
+        picked = {}
         for k, v in event.to_select_from.items():
-            picked.append({k: v[event.selected.index]})
+            picked[k] = v[event.selected.index]
 
         return next_inputs, picked, event
 
     def _call_after_scoring_before_learning(
         self, event: PickBestEvent, score: Optional[float]
     ) -> PickBestEvent:
-        if event.selected:
+        if event.selected and score is not None:
             event.selected.score = score
         return event
 
@@ -340,26 +340,37 @@ class PickBest(base.RLLoop[PickBestEvent]):
     def create(
         cls: Type[PickBest],
         policy: Optional[base.Policy] = None,
-        llm = None,
+        llm=None,
         selection_scorer: Union[base.AutoSelectionScorer, object] = SENTINEL,
-        metrics_step: int = -1,
-        metrics_window_size: int = -1,
-        **policy_args: Any,
+        **kwargs: Any,
     ) -> PickBest:
         if selection_scorer is SENTINEL and llm is None:
             raise ValueError("Either llm or selection_scorer must be provided")
         elif selection_scorer is SENTINEL:
             selection_scorer = base.AutoSelectionScorer(llm=llm)
-        if policy and any(policy_args):
+
+        policy_args = {
+            "feature_embedder": kwargs.pop("feature_embedder", None),
+            "vw_cmd": kwargs.pop("vw_cmd", None),
+            "model_save_dir": kwargs.pop("model_save_dir", None),
+            "reset_model": kwargs.pop("reset_model", None),
+            "vw_logs": kwargs.pop("vw_logs", None),
+        }
+
+        if policy and any(policy_args.values()):
             logger.warning(
-                f"{list(policy_args.keys())} will be ignored since nontrivial policy is provided"
+                f"{[k for k, v in policy_args.items() if v]} will be ignored since nontrivial policy is provided, please set those arguments in the policy directly if needed"
             )
+        
+        if policy_args["model_save_dir"] is None:
+            policy_args["model_save_dir"] = "./"
+        if policy_args["reset_model"] is None:
+            policy_args["reset_model"] = False
 
         return PickBest(
-            policy = policy or PickBest.create_policy(**policy_args),
-            selection_scorer = selection_scorer,
-            metrics_step = metrics_step,
-            metrics_window_size = metrics_window_size,
+            policy=policy or PickBest.create_policy(**policy_args, **kwargs),
+            selection_scorer=selection_scorer,
+            **kwargs,
         )
 
     @staticmethod
@@ -369,7 +380,8 @@ class PickBest(base.RLLoop[PickBestEvent]):
         model_save_dir: str = "./",
         reset_model: bool = False,
         vw_logs: Optional[Union[str, os.PathLike]] = None,
-        **kwargs):
+        **kwargs,
+    ):
         auto_embed = kwargs.get("auto_embed", False)
         if feature_embedder:
             if "auto_embed" in kwargs:
@@ -380,7 +392,7 @@ class PickBest(base.RLLoop[PickBestEvent]):
             auto_embed = False
         else:
             feature_embedder = PickBestFeatureEmbedder(auto_embed=auto_embed)
-        kwargs.pop('auto_embed', None)
+        kwargs.pop("auto_embed", None)
 
         vw_cmd = vw_cmd or []
         if vw_cmd:
@@ -403,19 +415,13 @@ class PickBest(base.RLLoop[PickBestEvent]):
                 "--quiet",
             ]
         return base.VwPolicy(
-                model_repo=base.ModelRepository(
-                    model_save_dir, with_history=True, reset=reset_model
-                ),
-                vw_cmd = [
-                    "--interactions=::",
-                    "--cb_explore_adf",
-                    "--coin",
-                    "--squarecb",
-                    "--quiet",
-                ],
-                feature_embedder=feature_embedder,
-                vw_logger=base.VwLogger(vw_logs),
-            )
+            model_repo=base.ModelRepository(
+                model_save_dir, with_history=True, reset=reset_model
+            ),
+            vw_cmd=vw_cmd,
+            feature_embedder=feature_embedder,
+            vw_logger=base.VwLogger(vw_logs),
+        )
 
     def _default_policy(self):
         return PickBest.create_policy()

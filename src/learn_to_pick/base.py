@@ -228,12 +228,30 @@ class Embedder(Generic[TEvent], ABC):
 
 
 class SelectionScorer(Generic[TEvent], ABC):
-    """Abstract method to grade the chosen selection or the response of the llm"""
+    """
+    Abstract method to grade the selection.
+    Subclasses should implement the score_response method to define custom scoring logic.
+    """
 
     @abstractmethod
     def score_response(
         self, inputs: Dict[str, Any], picked: Any, event: TEvent
     ) -> float:
+        """
+        Calculate and return the score for the selected response.
+
+        This is an abstract method and should be implemented by subclasses.
+        The method defines a blueprint for applying scoring logic based on the provided 
+        inputs, the selection made by the policy, and additional metadata from the event.
+
+        Args:
+            inputs (Dict[str, Any]): The inputs provided to the picker.
+            picked (Any): The selection made by the policy.
+            event (TEvent): Metadata associated with the selection event.
+
+        Returns:
+            float: The calculated score for the selected response.
+        """
         ...
 
 
@@ -334,9 +352,7 @@ class RLLoop(Generic[TEvent]):
 
         if self.selection_scorer is None:
             logger.warning(
-                "No selection scorer provided, which means that no \
-                    reinforcement learning will be done in the RL chain \
-                        unless update_with_delayed_score is called."
+                "No selection scorer provided, which means that no reinforcement learning will be done in the RL chain unless update_with_delayed_score is called."
             )
 
         if metrics_window_size > 0:
@@ -430,7 +446,7 @@ class RLLoop(Generic[TEvent]):
 
         for callback_func in self.callbacks_before_scoring:
             try:
-                next_chain_inputs, picked, event = callback_func(next_chain_inputs, picked, event)
+                next_chain_inputs, event = callback_func(inputs=next_chain_inputs, picked=picked, event=event)
             except Exception as e:
                 logger.info(
                     f"Callback function {callback_func} failed, error: {e}"
@@ -447,10 +463,11 @@ class RLLoop(Generic[TEvent]):
                 f"The selection scorer was not able to score, \
                 and the chain was not able to adjust to this response, error: {e}"
             )
-        if self.metrics and score is not None:
-            self.metrics.on_feedback(score)
 
         event = self._call_after_scoring_before_learning(score=score, event=event)
+
+        if self.metrics and event.selected.score is not None:
+            self.metrics.on_feedback(event.selected.score)
         self.policy.learn(event=event)
         self.policy.log(event=event)
 
