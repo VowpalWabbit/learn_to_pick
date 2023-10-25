@@ -22,7 +22,7 @@ class fake_llm_caller_with_score:
 def test_multiple_ToSelectFrom_throws() -> None:
     pick = learn_to_pick.PickBest.create(
         llm=fake_llm_caller,
-        feature_embedder=learn_to_pick.PickBestFeatureEmbedder(
+        featurizer=learn_to_pick.PickBestFeaturizer(
             auto_embed=False, model=MockEncoder()
         ),
     )
@@ -38,7 +38,7 @@ def test_multiple_ToSelectFrom_throws() -> None:
 def test_missing_basedOn_from_throws() -> None:
     pick = learn_to_pick.PickBest.create(
         llm=fake_llm_caller,
-        feature_embedder=learn_to_pick.PickBestFeatureEmbedder(
+        featurizer=learn_to_pick.PickBestFeaturizer(
             auto_embed=False, model=MockEncoder()
         ),
     )
@@ -50,7 +50,7 @@ def test_missing_basedOn_from_throws() -> None:
 def test_ToSelectFrom_not_a_list_throws() -> None:
     pick = learn_to_pick.PickBest.create(
         llm=fake_llm_caller,
-        feature_embedder=learn_to_pick.PickBestFeatureEmbedder(
+        featurizer=learn_to_pick.PickBestFeaturizer(
             auto_embed=False, model=MockEncoder()
         ),
     )
@@ -67,7 +67,7 @@ def test_update_with_delayed_score_with_auto_validator_throws() -> None:
     pick = learn_to_pick.PickBest.create(
         llm=fake_llm_caller,
         selection_scorer=learn_to_pick.AutoSelectionScorer(llm=auto_val_llm),
-        feature_embedder=learn_to_pick.PickBestFeatureEmbedder(
+        featurizer=learn_to_pick.PickBestFeaturizer(
             auto_embed=False, model=MockEncoder()
         ),
     )
@@ -91,7 +91,7 @@ def test_update_with_delayed_score_force() -> None:
     pick = learn_to_pick.PickBest.create(
         llm=fake_llm_caller,
         selection_scorer=learn_to_pick.AutoSelectionScorer(llm=auto_val_llm),
-        feature_embedder=learn_to_pick.PickBestFeatureEmbedder(
+        featurizer=learn_to_pick.PickBestFeaturizer(
             auto_embed=False, model=MockEncoder()
         ),
     )
@@ -112,7 +112,7 @@ def test_update_with_delayed_score() -> None:
     pick = learn_to_pick.PickBest.create(
         llm=fake_llm_caller,
         selection_scorer=None,
-        feature_embedder=learn_to_pick.PickBestFeatureEmbedder(
+        featurizer=learn_to_pick.PickBestFeaturizer(
             auto_embed=False, model=MockEncoder()
         ),
     )
@@ -141,7 +141,7 @@ def test_user_defined_scorer() -> None:
     pick = learn_to_pick.PickBest.create(
         llm=fake_llm_caller,
         selection_scorer=CustomSelectionScorer(),
-        feature_embedder=learn_to_pick.PickBestFeatureEmbedder(
+        featurizer=learn_to_pick.PickBestFeaturizer(
             auto_embed=False, model=MockEncoder()
         ),
     )
@@ -155,11 +155,11 @@ def test_user_defined_scorer() -> None:
 
 
 def test_everything_embedded() -> None:
-    feature_embedder = learn_to_pick.PickBestFeatureEmbedder(
+    featurizer = learn_to_pick.PickBestFeaturizer(
         auto_embed=False, model=MockEncoder()
     )
     pick = learn_to_pick.PickBest.create(
-        llm=fake_llm_caller, feature_embedder=feature_embedder
+        llm=fake_llm_caller, featurizer=featurizer
     )
 
     str1 = "0"
@@ -182,16 +182,16 @@ def test_everything_embedded() -> None:
         action=rl_loop.EmbedAndKeep(learn_to_pick.ToSelectFrom(actions)),
     )
     picked_metadata = response["picked_metadata"]  # type: ignore
-    vw_str = feature_embedder.format(picked_metadata)  # type: ignore
+    vw_str = featurizer.format(picked_metadata)  # type: ignore
     assert vw_str == expected
 
 
 def test_default_auto_embedder_is_off() -> None:
-    feature_embedder = learn_to_pick.PickBestFeatureEmbedder(
+    featurizer = learn_to_pick.PickBestFeaturizer(
         auto_embed=False, model=MockEncoder()
     )
     pick = learn_to_pick.PickBest.create(
-        llm=fake_llm_caller, feature_embedder=feature_embedder
+        llm=fake_llm_caller, featurizer=featurizer
     )
 
     str1 = "0"
@@ -208,16 +208,16 @@ def test_default_auto_embedder_is_off() -> None:
         action=learn_to_pick.base.ToSelectFrom(actions),
     )
     picked_metadata = response["picked_metadata"]  # type: ignore
-    vw_str = feature_embedder.format(picked_metadata)  # type: ignore
+    vw_str = featurizer.format(picked_metadata)  # type: ignore
     assert vw_str == expected
 
 
 def test_default_w_embeddings_off() -> None:
-    feature_embedder = learn_to_pick.PickBestFeatureEmbedder(
+    featurizer = learn_to_pick.PickBestFeaturizer(
         auto_embed=False, model=MockEncoder()
     )
     pick = learn_to_pick.PickBest.create(
-        llm=fake_llm_caller, feature_embedder=feature_embedder
+        llm=fake_llm_caller, featurizer=featurizer
     )
 
     str1 = "0"
@@ -234,16 +234,16 @@ def test_default_w_embeddings_off() -> None:
         action=learn_to_pick.ToSelectFrom(actions),
     )
     picked_metadata = response["picked_metadata"]  # type: ignore
-    vw_str = feature_embedder.format(picked_metadata)  # type: ignore
+    vw_str = featurizer.format(picked_metadata)  # type: ignore
     assert vw_str == expected
 
 
 def test_default_w_embeddings_on() -> None:
-    feature_embedder = learn_to_pick.PickBestFeatureEmbedder(
+    featurizer = learn_to_pick.PickBestFeaturizer(
         auto_embed=True, model=MockEncoderReturnsList()
     )
     pick = learn_to_pick.PickBest.create(
-        llm=fake_llm_caller, feature_embedder=feature_embedder
+        llm=fake_llm_caller, featurizer=featurizer
     )
 
     str1 = "0"
@@ -260,16 +260,16 @@ def test_default_w_embeddings_on() -> None:
         action=learn_to_pick.ToSelectFrom(actions),
     )
     picked_metadata = response["picked_metadata"]  # type: ignore
-    vw_str = feature_embedder.format(picked_metadata)  # type: ignore
+    vw_str = featurizer.format(picked_metadata)  # type: ignore
     assert vw_str == expected
 
 
 def test_default_embeddings_mixed_w_explicit_user_embeddings() -> None:
-    feature_embedder = learn_to_pick.PickBestFeatureEmbedder(
+    featurizer = learn_to_pick.PickBestFeaturizer(
         auto_embed=True, model=MockEncoderReturnsList()
     )
     pick = learn_to_pick.PickBest.create(
-        llm=fake_llm_caller, feature_embedder=feature_embedder
+        llm=fake_llm_caller, featurizer=featurizer
     )
 
     str1 = "0"
@@ -290,14 +290,14 @@ def test_default_embeddings_mixed_w_explicit_user_embeddings() -> None:
         action=learn_to_pick.ToSelectFrom(actions),
     )
     picked_metadata = response["picked_metadata"]  # type: ignore
-    vw_str = feature_embedder.format(picked_metadata)  # type: ignore
+    vw_str = featurizer.format(picked_metadata)  # type: ignore
     assert vw_str == expected
 
 
 def test_default_no_scorer_specified() -> None:
     pick = learn_to_pick.PickBest.create(
         llm=fake_llm_caller_with_score,
-        feature_embedder=learn_to_pick.PickBestFeatureEmbedder(
+        featurizer=learn_to_pick.PickBestFeaturizer(
             auto_embed=False, model=MockEncoder()
         ),
     )
@@ -314,7 +314,7 @@ def test_explicitly_no_scorer() -> None:
     pick = learn_to_pick.PickBest.create(
         llm=fake_llm_caller,
         selection_scorer=None,
-        feature_embedder=learn_to_pick.PickBestFeatureEmbedder(
+        featurizer=learn_to_pick.PickBestFeaturizer(
             auto_embed=False, model=MockEncoder()
         ),
     )
@@ -332,7 +332,7 @@ def test_auto_scorer_with_user_defined_llm() -> None:
     pick = learn_to_pick.PickBest.create(
         llm=fake_llm_caller,
         selection_scorer=learn_to_pick.AutoSelectionScorer(llm=scorer_llm),
-        feature_embedder=learn_to_pick.PickBestFeatureEmbedder(
+        featurizer=learn_to_pick.PickBestFeaturizer(
             auto_embed=False, model=MockEncoder()
         ),
     )
@@ -351,7 +351,7 @@ def test_activate_and_deactivate_scorer() -> None:
     pick = learn_to_pick.PickBest.create(
         llm=llm,
         selection_scorer=learn_to_pick.base.AutoSelectionScorer(llm=scorer_llm),
-        feature_embedder=learn_to_pick.PickBestFeatureEmbedder(
+        featurizer=learn_to_pick.PickBestFeaturizer(
             auto_embed=False, model=MockEncoder()
         ),
     )
