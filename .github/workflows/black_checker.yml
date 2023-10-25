@@ -1,0 +1,25 @@
+name: Black Formatting Check
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - '*'
+
+jobs:
+  black-check:
+    container:
+      image: python:3.8
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install dependencies
+      run: |
+        pip install .[dev]
+
+    - name: Check Black formatting
+      run: |
+        black --check .

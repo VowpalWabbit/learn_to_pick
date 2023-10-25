@@ -14,7 +14,8 @@ setup(
     ],
     extras_require={
         'dev': [
-            'pytest'
+            'pytest',
+            'black'
         ]
     },
     author="VowpalWabbit",
