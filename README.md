@@ -33,7 +33,7 @@ The beauty of `learn_to_pick` is its flexibility. Whether you're a fan of Vowpal
 
 ## Installation
 
-`pip install .`
+`pip install learn-to-pick`
 
 ## Basic Usage
 
