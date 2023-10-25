@@ -359,7 +359,7 @@ class PickBest(base.RLLoop[PickBestEvent]):
             policy_args["reset_model"] = False
 
         return PickBest(
-            policy=policy or PickBest.create_policy(**policy_args, **kwargs),
+            policy=policy or PickBest.create_policy(**policy_args),
             selection_scorer=selection_scorer,
             **kwargs,
         )
@@ -370,8 +370,7 @@ class PickBest(base.RLLoop[PickBestEvent]):
         vw_cmd: Optional[List[str]] = None,
         model_save_dir: str = "./",
         reset_model: bool = False,
-        vw_logs: Optional[Union[str, os.PathLike]] = None,
-        **kwargs,
+        vw_logs: Optional[Union[str, os.PathLike]] = None
     ):
         if not feature_embedder:
             feature_embedder = PickBestFeatureEmbedder(auto_embed=False)
