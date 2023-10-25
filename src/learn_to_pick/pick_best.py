@@ -320,16 +320,16 @@ class PickBest(base.RLLoop[PickBestEvent]):
         )
         next_inputs[self.selected_based_on_input_key] = str(event.based_on)
         next_inputs[self.selected_input_key] = v
-        picked = []
+        picked = {}
         for k, v in event.to_select_from.items():
-            picked.append({k: v[event.selected.index]})
+            picked[k] = v[event.selected.index]
 
         return next_inputs, picked, event
 
     def _call_after_scoring_before_learning(
         self, event: PickBestEvent, score: Optional[float]
     ) -> PickBestEvent:
-        if event.selected:
+        if event.selected and score is not None:
             event.selected.score = score
         return event
 
@@ -342,24 +342,30 @@ class PickBest(base.RLLoop[PickBestEvent]):
         policy: Optional[base.Policy] = None,
         llm = None,
         selection_scorer: Union[base.AutoSelectionScorer, object] = SENTINEL,
-        metrics_step: int = -1,
-        metrics_window_size: int = -1,
-        **policy_args: Any,
+        **kwargs: Any,
     ) -> PickBest:
         if selection_scorer is SENTINEL and llm is None:
             raise ValueError("Either llm or selection_scorer must be provided")
         elif selection_scorer is SENTINEL:
             selection_scorer = base.AutoSelectionScorer(llm=llm)
-        if policy and any(policy_args):
-            logger.warning(
-                f"{list(policy_args.keys())} will be ignored since nontrivial policy is provided" 
-            )
+
+        feature_embedder = kwargs.pop('feature_embedder', None)
+        vw_cmd = kwargs.pop('vw_cmd', None)
+        model_save_dir = kwargs.pop('model_save_dir', "./")
+        reset_model = kwargs.pop('reset_model', False)
+        vw_logs = kwargs.pop('vw_logs', None)
 
         return PickBest(
-            policy = policy or PickBest.create_policy(**policy_args),
+            policy = policy or PickBest.create_policy(
+                feature_embedder=feature_embedder,
+                vw_cmd=vw_cmd,
+                model_save_dir=model_save_dir,
+                reset_model=reset_model,
+                vw_logs=vw_logs,
+                **kwargs,
+            ),
             selection_scorer = selection_scorer,
-            metrics_step = metrics_step,
-            metrics_window_size = metrics_window_size,
+            **kwargs,
         )
     
     @staticmethod
@@ -406,13 +412,7 @@ class PickBest(base.RLLoop[PickBestEvent]):
                 model_repo=base.ModelRepository(
                     model_save_dir, with_history=True, reset=reset_model
                 ),
-                vw_cmd = [
-                    "--interactions=::",
-                    "--cb_explore_adf",
-                    "--coin",
-                    "--squarecb",
-                    "--quiet",
-                ],
+                vw_cmd = vw_cmd,
                 feature_embedder=feature_embedder,
                 vw_logger=base.VwLogger(vw_logs),
             )

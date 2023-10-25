@@ -39,7 +39,7 @@ class ModelRepository:
 
     def save(self, workspace: "vw.Workspace") -> None:
         with open(self.model_path, "wb") as f:
-            logger.info(f"storing rl_chain model in: {self.model_path}")
+            logger.info(f"storing learn_to_pick model in: {self.model_path}")
             f.write(workspace.serialize())
         if self.with_history:  # write history
             shutil.copyfile(self.model_path, self.folder / f"model-{self.get_tag()}.vw")
@@ -58,6 +58,6 @@ class ModelRepository:
             with open(self.model_path, "rb") as f:
                 model_data = f.read()
         if model_data:
-            logger.info(f"rl_chain model is loaded from: {self.model_path}")
+            logger.info(f"learn_to_pick model is loaded from: {self.model_path}")
             return vw.Workspace(commandline, model_data=model_data)
         return vw.Workspace(commandline)
