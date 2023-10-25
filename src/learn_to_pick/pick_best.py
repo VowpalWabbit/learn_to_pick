@@ -242,11 +242,11 @@ class PickBest(base.RLLoop[PickBestEvent]):
     Each invocation of the `run()` method should be equipped with a set of potential actions (`ToSelectFrom`) and will result in the selection of a specific action based on the `BasedOn` input.
 
     The standard operation flow of this run() call includes a loop:
-        1. The loop is invoked with inputs containing the `BasedOn` criteria and a list of potential actions (`ToSelectFrom`).
-        2. An action is selected based on the `BasedOn` input.
-        3. If a `selection_scorer` is provided, it is used to score the selection.
-        4. The internal Policy is updated with the `BasedOn` input, the chosen `ToSelectFrom` action, and the resulting score from the scorer.
-        5. The final pick is returned.
+        - The loop is invoked with inputs containing the `BasedOn` criteria and a list of potential actions (`ToSelectFrom`).
+        - An action is selected based on the `BasedOn` input.
+        - If a `selection_scorer` is provided, it is used to score the selection.
+        - The internal Policy is updated with the `BasedOn` input, the chosen `ToSelectFrom` action, and the resulting score from the scorer.
+        - The final pick is returned.
 
     Expected input dictionary format:
         - At least one variable encapsulated within `BasedOn` to serve as the selection criteria.
@@ -261,12 +261,6 @@ class PickBest(base.RLLoop[PickBestEvent]):
     Attributes:
         feature_embedder (PickBestFeatureEmbedder, optional): Is an advanced attribute. Responsible for embedding the `BasedOn` and `ToSelectFrom` inputs. If omitted, a default embedder is utilized.
     """
-
-    def __init__(
-        self,
-        **kwargs: Any,
-    ):
-        super().__init__(**kwargs)
 
     def _call_before_predict(self, inputs: Dict[str, Any]) -> PickBestEvent:
         context, actions = base.get_based_on_and_to_select_from(inputs=inputs)
@@ -333,9 +327,6 @@ class PickBest(base.RLLoop[PickBestEvent]):
             event.selected.score = score
         return event
 
-    def run(self, **kwargs) -> Dict[str, Any]:
-        return super().run(**kwargs)
-
     @classmethod
     def create(
         cls: Type[PickBest],
@@ -382,38 +373,34 @@ class PickBest(base.RLLoop[PickBestEvent]):
         vw_logs: Optional[Union[str, os.PathLike]] = None,
         **kwargs,
     ):
-        auto_embed = kwargs.get("auto_embed", False)
-        if feature_embedder:
-            if "auto_embed" in kwargs:
-                logger.warning(
-                    "auto_embed will take no effect when explicit feature_embedder is provided"
-                )
-            # turning auto_embed off for cli setting below
-            auto_embed = False
-        else:
-            feature_embedder = PickBestFeatureEmbedder(auto_embed=auto_embed)
-        kwargs.pop("auto_embed", None)
+        if not feature_embedder:
+            feature_embedder = PickBestFeatureEmbedder(auto_embed=False)
 
         vw_cmd = vw_cmd or []
+        interactions = []
         if vw_cmd:
             if "--cb_explore_adf" not in vw_cmd:
                 raise ValueError(
                     "If vw_cmd is specified, it must include --cb_explore_adf"
                 )
         else:
-            interactions = ["--interactions=::"]
-            if auto_embed:
-                interactions = [
-                    "--interactions=@#",
-                    "--ignore_linear=@",
-                    "--ignore_linear=#",
-                ]
-            vw_cmd = interactions + [
+            interactions += ["--interactions=::"]
+            vw_cmd = [
                 "--cb_explore_adf",
                 "--coin",
                 "--squarecb",
                 "--quiet",
             ]
+
+        if feature_embedder.auto_embed:
+            interactions += [
+                "--interactions=@#",
+                "--ignore_linear=@",
+                "--ignore_linear=#",
+            ]
+        
+        vw_cmd = interactions + vw_cmd
+
         return base.VwPolicy(
             model_repo=base.ModelRepository(
                 model_save_dir, with_history=True, reset=reset_model

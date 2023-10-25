@@ -8,13 +8,11 @@ import learn_to_pick.base as base
 encoded_keyword = "[encoded]"
 
 
-@pytest.mark.requires("vowpal_wabbit_next")
 def test_simple_context_str_no_emb() -> None:
     expected = [{"a_namespace": "test"}]
     assert base.embed("test", MockEncoder(), "a_namespace") == expected
 
 
-@pytest.mark.requires("vowpal_wabbit_next")
 def test_simple_context_str_w_emb() -> None:
     str1 = "test"
     encoded_str1 = base.stringify_embedding(list(encoded_keyword + str1))
@@ -27,7 +25,6 @@ def test_simple_context_str_w_emb() -> None:
     )
 
 
-@pytest.mark.requires("vowpal_wabbit_next")
 def test_simple_context_str_w_nested_emb() -> None:
     # nested embeddings, innermost wins
     str1 = "test"
@@ -45,13 +42,11 @@ def test_simple_context_str_w_nested_emb() -> None:
     )
 
 
-@pytest.mark.requires("vowpal_wabbit_next")
 def test_context_w_namespace_no_emb() -> None:
     expected = [{"test_namespace": "test"}]
     assert base.embed({"test_namespace": "test"}, MockEncoder()) == expected
 
 
-@pytest.mark.requires("vowpal_wabbit_next")
 def test_context_w_namespace_w_emb() -> None:
     str1 = "test"
     encoded_str1 = base.stringify_embedding(list(encoded_keyword + str1))
@@ -64,7 +59,6 @@ def test_context_w_namespace_w_emb() -> None:
     )
 
 
-@pytest.mark.requires("vowpal_wabbit_next")
 def test_context_w_namespace_w_emb2() -> None:
     str1 = "test"
     encoded_str1 = base.stringify_embedding(list(encoded_keyword + str1))
@@ -77,7 +71,6 @@ def test_context_w_namespace_w_emb2() -> None:
     )
 
 
-@pytest.mark.requires("vowpal_wabbit_next")
 def test_context_w_namespace_w_some_emb() -> None:
     str1 = "test1"
     str2 = "test2"
@@ -104,7 +97,6 @@ def test_context_w_namespace_w_some_emb() -> None:
     )
 
 
-@pytest.mark.requires("vowpal_wabbit_next")
 def test_simple_action_strlist_no_emb() -> None:
     str1 = "test1"
     str2 = "test2"
@@ -114,7 +106,6 @@ def test_simple_action_strlist_no_emb() -> None:
     assert base.embed(to_embed, MockEncoder(), "a_namespace") == expected
 
 
-@pytest.mark.requires("vowpal_wabbit_next")
 def test_simple_action_strlist_w_emb() -> None:
     str1 = "test1"
     str2 = "test2"
@@ -142,7 +133,6 @@ def test_simple_action_strlist_w_emb() -> None:
     )
 
 
-@pytest.mark.requires("vowpal_wabbit_next")
 def test_simple_action_strlist_w_some_emb() -> None:
     str1 = "test1"
     str2 = "test2"
@@ -175,7 +165,6 @@ def test_simple_action_strlist_w_some_emb() -> None:
     )
 
 
-@pytest.mark.requires("vowpal_wabbit_next")
 def test_action_w_namespace_no_emb() -> None:
     str1 = "test1"
     str2 = "test2"
@@ -198,7 +187,6 @@ def test_action_w_namespace_no_emb() -> None:
     )
 
 
-@pytest.mark.requires("vowpal_wabbit_next")
 def test_action_w_namespace_w_emb() -> None:
     str1 = "test1"
     str2 = "test2"
@@ -240,7 +228,6 @@ def test_action_w_namespace_w_emb() -> None:
     )
 
 
-@pytest.mark.requires("vowpal_wabbit_next")
 def test_action_w_namespace_w_emb2() -> None:
     str1 = "test1"
     str2 = "test2"
@@ -286,7 +273,6 @@ def test_action_w_namespace_w_emb2() -> None:
     )
 
 
-@pytest.mark.requires("vowpal_wabbit_next")
 def test_action_w_namespace_w_some_emb() -> None:
     str1 = "test1"
     str2 = "test2"
@@ -327,7 +313,6 @@ def test_action_w_namespace_w_some_emb() -> None:
     )
 
 
-@pytest.mark.requires("vowpal_wabbit_next")
 def test_action_w_namespace_w_emb_w_more_than_one_item_in_first_dict() -> None:
     str1 = "test1"
     str2 = "test2"
@@ -378,7 +363,6 @@ def test_action_w_namespace_w_emb_w_more_than_one_item_in_first_dict() -> None:
     )
 
 
-@pytest.mark.requires("vowpal_wabbit_next")
 def test_one_namespace_w_list_of_features_no_emb() -> None:
     str1 = "test1"
     str2 = "test2"
@@ -386,7 +370,6 @@ def test_one_namespace_w_list_of_features_no_emb() -> None:
     assert base.embed({"test_namespace": [str1, str2]}, MockEncoder()) == expected
 
 
-@pytest.mark.requires("vowpal_wabbit_next")
 def test_one_namespace_w_list_of_features_w_some_emb() -> None:
     str1 = "test1"
     str2 = "test2"
@@ -398,25 +381,21 @@ def test_one_namespace_w_list_of_features_w_some_emb() -> None:
     )
 
 
-@pytest.mark.requires("vowpal_wabbit_next")
 def test_nested_list_features_throws() -> None:
     with pytest.raises(ValueError):
         base.embed({"test_namespace": [[1, 2], [3, 4]]}, MockEncoder())
 
 
-@pytest.mark.requires("vowpal_wabbit_next")
 def test_dict_in_list_throws() -> None:
     with pytest.raises(ValueError):
         base.embed({"test_namespace": [{"a": 1}, {"b": 2}]}, MockEncoder())
 
 
-@pytest.mark.requires("vowpal_wabbit_next")
 def test_nested_dict_throws() -> None:
     with pytest.raises(ValueError):
         base.embed({"test_namespace": {"a": {"b": 1}}}, MockEncoder())
 
 
-@pytest.mark.requires("vowpal_wabbit_next")
 def test_list_of_tuples_throws() -> None:
     with pytest.raises(ValueError):
         base.embed({"test_namespace": [("a", 1), ("b", 2)]}, MockEncoder())
