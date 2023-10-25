@@ -232,7 +232,7 @@ class SelectionScorer(Generic[TEvent], ABC):
 
     @abstractmethod
     def score_response(
-        self, inputs: Dict[str, Any], event: TEvent
+        self, inputs: Dict[str, Any], picked: Any, event: TEvent
     ) -> float:
         ...
 
@@ -258,9 +258,9 @@ class AutoSelectionScorer(SelectionScorer[Event]):
 
     @staticmethod
     def get_default_prompt() -> str:
-        human_template = """Given this based_on "{rl_chain_selected_based_on}" \
+        human_template = """Given this based_on "{pick_best_selected_based_on}" \
             as the most important attribute, rank how good or bad this text is: \
-                "{rl_chain_selected}"."""
+                "{pick_best_selected}"."""
         default_system_prompt = AutoSelectionScorer.get_default_system_prompt()
         return default_system_prompt + human_template
 
@@ -276,7 +276,7 @@ class AutoSelectionScorer(SelectionScorer[Event]):
         return prompt.format(**relevant_inputs)
 
     def score_response(
-        self, inputs: Dict[str, Any], event: Event
+        self, inputs: Dict[str, Any], picked: Any,  event: Event
     ) -> float:
         p = AutoSelectionScorer.format_with_ignoring_extra_args(self.prompt, inputs)
         ranking = self.llm.predict(p)
@@ -313,8 +313,8 @@ class RLLoop(Generic[TEvent]):
         By default the class initializes the VW model using the provided arguments. If `selection_scorer` is not provided, a warning is logged, indicating that no reinforcement learning will occur unless the `update_with_delayed_score` method is called.
     """
     # Define the default values as class attributes
-    selected_input_key = "rl_chain_selected"
-    selected_based_on_input_key = "rl_chain_selected_based_on"
+    selected_input_key = "pick_best_selected"
+    selected_based_on_input_key = "pick_best_selected_based_on"
 
     def __init__(
         self,
@@ -433,13 +433,13 @@ class RLLoop(Generic[TEvent]):
         if self.metrics:
             self.metrics.on_decision()
 
-        next_chain_inputs, event = self._call_after_predict_before_scoring(
+        next_chain_inputs, picked, event = self._call_after_predict_before_scoring(
             inputs=inputs, event=event, prediction=prediction
         )
 
         for callback_func in self.callbacks_before_scoring:
             try:
-                next_chain_inputs, event = callback_func(next_chain_inputs, event)
+                next_chain_inputs, picked, event = callback_func(next_chain_inputs, picked, event)
             except Exception as e:
                 logger.info(
                     f"Callback function {callback_func} failed, error: {e}"
@@ -449,7 +449,7 @@ class RLLoop(Generic[TEvent]):
         try:
             if self._can_use_selection_scorer():
                 score = self.selection_scorer.score_response(
-                    inputs=next_chain_inputs, event=event
+                    inputs=next_chain_inputs, picked=picked, event=event
                 )
         except Exception as e:
             logger.info(
@@ -462,10 +462,6 @@ class RLLoop(Generic[TEvent]):
         event = self._call_after_scoring_before_learning(score=score, event=event)
         self.policy.learn(event=event)
         self.policy.log(event=event)
-
-        picked = []
-        for k, v in event.to_select_from.items():
-            picked.append({k: v[event.selected.index]})
 
         event.outputs = next_chain_inputs
         return {"picked": picked, "picked_metadata": event}
