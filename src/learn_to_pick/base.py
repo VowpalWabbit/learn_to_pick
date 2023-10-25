@@ -236,7 +236,7 @@ class SelectionScorer(Generic[TEvent], ABC):
         Calculate and return the score for the selected response.
 
         This is an abstract method and should be implemented by subclasses.
-        The method defines a blueprint for applying scoring logic based on the provided 
+        The method defines a blueprint for applying scoring logic based on the provided
         inputs, the selection made by the policy, and additional metadata from the event.
 
         Args:

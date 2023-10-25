@@ -12,7 +12,7 @@ setup(
         "pyskiplist",
         "parameterfree",
     ],
-    extras_require={"dev": ["pytest", "black"]},
+    extras_require={"dev": ["pytest", "black==23.10.0"]},
     author="VowpalWabbit",
     description="",
     packages=find_packages(where="src"),
