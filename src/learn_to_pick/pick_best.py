@@ -352,8 +352,8 @@ class PickBest(base.RLLoop[PickBestEvent]):
         policy_args = {
             "feature_embedder": kwargs.pop("feature_embedder", None),
             "vw_cmd": kwargs.pop("vw_cmd", None),
-            "model_save_dir": kwargs.pop("model_save_dir", "./"),
-            "reset_model": kwargs.pop("reset_model", False),
+            "model_save_dir": kwargs.pop("model_save_dir", None),
+            "reset_model": kwargs.pop("reset_model", None),
             "vw_logs": kwargs.pop("vw_logs", None),
         }
 
@@ -361,6 +361,11 @@ class PickBest(base.RLLoop[PickBestEvent]):
             logger.warning(
                 f"{[k for k, v in policy_args.items() if v]} will be ignored since nontrivial policy is provided, please set those arguments in the policy directly if needed"
             )
+        
+        if policy_args["model_save_dir"] is None:
+            policy_args["model_save_dir"] = "./"
+        if policy_args["reset_model"] is None:
+            policy_args["reset_model"] = False
 
         return PickBest(
             policy=policy or PickBest.create_policy(**policy_args, **kwargs),
