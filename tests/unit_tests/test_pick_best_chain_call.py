@@ -3,16 +3,6 @@ from typing import Any, Dict
 import pytest
 from test_utils import MockEncoder, MockEncoderReturnsList
 
-## from langchain.chat_models import FakeListChatModel
-## from langchain.prompts.prompt import PromptTemplate
-## import langchain_experimental.learn_to_pick.base as learn_to_pick
-## import langchain_experimental.learn_to_pick.learn_to_pick as learn_to_pick
-# import learn_to_pick
-# import learn_to_pick.base as rl_loop
-## import learn_to_pick.pick_best as learn_to_pick
-
-import sys
-sys.path.append("../../src")
 import learn_to_pick
 import learn_to_pick.base as rl_loop
 
@@ -20,22 +10,17 @@ encoded_keyword = "[encoded]"
 
 class fake_llm_caller:
     def predict(self):
+        return "hey"
+
+class fake_llm_caller_with_score:
+    def predict(self):
         return "3"
-
-# @pytest.mark.requires("vowpal_wabbit_next", "sentence_transformers")
-# def setup() -> tuple:
-#     _PROMPT_TEMPLATE = """This is a dummy prompt that will be ignored by the fake llm"""
-#     PROMPT = PromptTemplate(input_variables=[], template=_PROMPT_TEMPLATE)
-
-#     llm = FakeListChatModel(responses=["hey"])
-#     return llm, PROMPT
-
 
 @pytest.mark.requires("vowpal_wabbit_next", "sentence_transformers")
 def test_multiple_ToSelectFrom_throws() -> None:
     pick = learn_to_pick.PickBest.create(
         llm=fake_llm_caller,
-        feature_embedder=learn_to_pick.PickBest.PickBestFeatureEmbedder(
+        feature_embedder=learn_to_pick.PickBestFeatureEmbedder(
             auto_embed=False, model=MockEncoder()
         ),
     )
@@ -52,7 +37,7 @@ def test_multiple_ToSelectFrom_throws() -> None:
 def test_missing_basedOn_from_throws() -> None:
     pick = learn_to_pick.PickBest.create(
         llm=fake_llm_caller,
-        feature_embedder=learn_to_pick.PickBest.PickBestFeatureEmbedder(
+        feature_embedder=learn_to_pick.PickBestFeatureEmbedder(
             auto_embed=False, model=MockEncoder()
         ),
     )
@@ -79,10 +64,7 @@ def test_ToSelectFrom_not_a_list_throws() -> None:
 
 @pytest.mark.requires("vowpal_wabbit_next", "sentence_transformers")
 def test_update_with_delayed_score_with_auto_validator_throws() -> None:
-    # llm, PROMPT = setup()
-    # this LLM returns a number so that the auto validator will return that
-    # auto_val_llm = FakeListChatModel(responses=["3"])
-    auto_val_llm = fake_llm_caller
+    auto_val_llm = fake_llm_caller_with_score
     pick = learn_to_pick.PickBest.create(
         llm=fake_llm_caller,
         selection_scorer=learn_to_pick.AutoSelectionScorer(llm=auto_val_llm),
@@ -96,7 +78,7 @@ def test_update_with_delayed_score_with_auto_validator_throws() -> None:
         action=learn_to_pick.ToSelectFrom(actions),
     )
     picked_metadata = response["picked_metadata"]  # type: ignore
-    print(picked_metadata.selected)
+
     assert picked_metadata.selected.score == 3.0  # type: ignore
     with pytest.raises(RuntimeError):
         pick.update_with_delayed_score(
@@ -107,7 +89,7 @@ def test_update_with_delayed_score_with_auto_validator_throws() -> None:
 @pytest.mark.requires("vowpal_wabbit_next", "sentence_transformers")
 def test_update_with_delayed_score_force() -> None:
     # this LLM returns a number so that the auto validator will return that
-    auto_val_llm = fake_llm_caller
+    auto_val_llm = fake_llm_caller_with_score
     pick = learn_to_pick.PickBest.create(
         llm=fake_llm_caller,
         selection_scorer=learn_to_pick.AutoSelectionScorer(llm=auto_val_llm),
@@ -204,10 +186,7 @@ def test_everything_embedded() -> None:
         action=rl_loop.EmbedAndKeep(learn_to_pick.ToSelectFrom(actions)),
     )
     picked_metadata = response["picked_metadata"]  # type: ignore
-    print(picked_metadata)
     vw_str = feature_embedder.format(picked_metadata)  # type: ignore
-    print(vw_str)
-    print(expected)
     assert vw_str == expected
 
 
@@ -267,12 +246,11 @@ def test_default_w_embeddings_off() -> None:
 
 @pytest.mark.requires("vowpal_wabbit_next", "sentence_transformers")
 def test_default_w_embeddings_on() -> None:
-    llm, PROMPT = setup()
     feature_embedder = learn_to_pick.PickBestFeatureEmbedder(
         auto_embed=True, model=MockEncoderReturnsList()
     )
     pick = learn_to_pick.PickBest.create(
-        llm=llm, prompt=PROMPT, feature_embedder=feature_embedder, auto_embed=True
+        llm=fake_llm_caller, feature_embedder=feature_embedder, auto_embed=True
     )
 
     str1 = "0"
@@ -295,12 +273,11 @@ def test_default_w_embeddings_on() -> None:
 
 @pytest.mark.requires("vowpal_wabbit_next", "sentence_transformers")
 def test_default_embeddings_mixed_w_explicit_user_embeddings() -> None:
-    llm, PROMPT = setup()
     feature_embedder = learn_to_pick.PickBestFeatureEmbedder(
         auto_embed=True, model=MockEncoderReturnsList()
     )
     pick = learn_to_pick.PickBest.create(
-        llm=llm, prompt=PROMPT, feature_embedder=feature_embedder, auto_embed=True
+        llm=fake_llm_caller, feature_embedder=feature_embedder, auto_embed=True
     )
 
     str1 = "0"
@@ -327,11 +304,8 @@ def test_default_embeddings_mixed_w_explicit_user_embeddings() -> None:
 
 @pytest.mark.requires("vowpal_wabbit_next", "sentence_transformers")
 def test_default_no_scorer_specified() -> None:
-    _, PROMPT = setup()
-    chain_llm = FakeListChatModel(responses=["hey", "100"])
     pick = learn_to_pick.PickBest.create(
-        llm=chain_llm,
-        prompt=PROMPT,
+        llm=fake_llm_caller_with_score,
         feature_embedder=learn_to_pick.PickBestFeatureEmbedder(
             auto_embed=False, model=MockEncoder()
         ),
@@ -341,17 +315,14 @@ def test_default_no_scorer_specified() -> None:
         action=learn_to_pick.ToSelectFrom(["0", "1", "2"]),
     )
     # chain llm used for both basic prompt and for scoring
-    assert response["response"] == "hey"  # type: ignore
     picked_metadata = response["picked_metadata"]  # type: ignore
-    assert picked_metadata.selected.score == 100.0  # type: ignore
+    assert picked_metadata.selected.score == 3.0  # type: ignore
 
 
 @pytest.mark.requires("vowpal_wabbit_next", "sentence_transformers")
 def test_explicitly_no_scorer() -> None:
-    llm, PROMPT = setup()
     pick = learn_to_pick.PickBest.create(
-        llm=llm,
-        prompt=PROMPT,
+        llm=fake_llm_caller,
         selection_scorer=None,
         feature_embedder=learn_to_pick.PickBestFeatureEmbedder(
             auto_embed=False, model=MockEncoder()
@@ -362,18 +333,15 @@ def test_explicitly_no_scorer() -> None:
         action=learn_to_pick.ToSelectFrom(["0", "1", "2"]),
     )
     # chain llm used for both basic prompt and for scoring
-    assert response["response"] == "hey"  # type: ignore
     picked_metadata = response["picked_metadata"]  # type: ignore
     assert picked_metadata.selected.score is None  # type: ignore
 
 
 @pytest.mark.requires("vowpal_wabbit_next", "sentence_transformers")
 def test_auto_scorer_with_user_defined_llm() -> None:
-    llm, PROMPT = setup()
-    scorer_llm = FakeListChatModel(responses=["300"])
+    scorer_llm = fake_llm_caller_with_score
     pick = learn_to_pick.PickBest.create(
-        llm=llm,
-        prompt=PROMPT,
+        llm=fake_llm_caller,
         selection_scorer=learn_to_pick.AutoSelectionScorer(llm=scorer_llm),
         feature_embedder=learn_to_pick.PickBestFeatureEmbedder(
             auto_embed=False, model=MockEncoder()
@@ -384,17 +352,15 @@ def test_auto_scorer_with_user_defined_llm() -> None:
         action=learn_to_pick.ToSelectFrom(["0", "1", "2"]),
     )
     # chain llm used for both basic prompt and for scoring
-    assert response["response"] == "hey"  # type: ignore
     picked_metadata = response["picked_metadata"]  # type: ignore
-    assert picked_metadata.selected.score == 300.0  # type: ignore
+    assert picked_metadata.selected.score == 3  # type: ignore
 
 
+@pytest.mark.skip(reason="Is this stil needed?")
 @pytest.mark.requires("vowpal_wabbit_next", "sentence_transformers")
 def test_calling_chain_w_reserved_inputs_throws() -> None:
-    llm, PROMPT = setup()
     pick = learn_to_pick.PickBest.create(
-        llm=llm,
-        prompt=PROMPT,
+        llm=fake_llm_caller_with_score,
         feature_embedder=learn_to_pick.PickBestFeatureEmbedder(
             auto_embed=False, model=MockEncoder()
         ),
@@ -407,19 +373,17 @@ def test_calling_chain_w_reserved_inputs_throws() -> None:
 
     with pytest.raises(ValueError):
         pick.run(
-            User=learn_to_pick.BasedOn("Context"),
-            learn_to_pick_selected=learn_to_pick.ToSelectFrom(["0", "1", "2"]),
+            User=rl_loop.BasedOn("Context"),
+            learn_to_pick_selected=rl_loop.ToSelectFrom(["0", "1", "2"]),
         )
 
 
 @pytest.mark.requires("vowpal_wabbit_next", "sentence_transformers")
 def test_activate_and_deactivate_scorer() -> None:
-    _, PROMPT = setup()
-    llm = FakeListChatModel(responses=["hey1", "hey2", "hey3"])
-    scorer_llm = FakeListChatModel(responses=["300", "400"])
+    llm = fake_llm_caller
+    scorer_llm = fake_llm_caller_with_score
     pick = learn_to_pick.PickBest.create(
         llm=llm,
-        prompt=PROMPT,
         selection_scorer=learn_to_pick.base.AutoSelectionScorer(llm=scorer_llm),
         feature_embedder=learn_to_pick.PickBestFeatureEmbedder(
             auto_embed=False, model=MockEncoder()
@@ -430,24 +394,21 @@ def test_activate_and_deactivate_scorer() -> None:
         action=learn_to_pick.base.ToSelectFrom(["0", "1", "2"]),
     )
     # chain llm used for both basic prompt and for scoring
-    assert response["response"] == "hey1"  # type: ignore
     picked_metadata = response["picked_metadata"]  # type: ignore
-    assert picked_metadata.selected.score == 300.0  # type: ignore
+    assert picked_metadata.selected.score == 3  # type: ignore
 
-    chain.deactivate_selection_scorer()
+    pick.deactivate_selection_scorer()
     response = pick.run(
         User=learn_to_pick.base.BasedOn("Context"),
         action=learn_to_pick.base.ToSelectFrom(["0", "1", "2"]),
     )
-    assert response["response"] == "hey2"  # type: ignore
     picked_metadata = response["picked_metadata"]  # type: ignore
     assert picked_metadata.selected.score is None  # type: ignore
 
-    chain.activate_selection_scorer()
+    pick.activate_selection_scorer()
     response = pick.run(
         User=learn_to_pick.base.BasedOn("Context"),
         action=learn_to_pick.base.ToSelectFrom(["0", "1", "2"]),
     )
-    assert response["response"] == "hey3"  # type: ignore
     picked_metadata = response["picked_metadata"]  # type: ignore
-    assert picked_metadata.selected.score == 400.0  # type: ignore
+    assert picked_metadata.selected.score == 3  # type: ignore

@@ -188,8 +188,6 @@ class PickBestFeatureEmbedder(base.Embedder[PickBestEvent]):
         Converts the `BasedOn` and `ToSelectFrom` into a format that can be used by VW
         """
         chosen_action, cost, prob = self.get_label(event)
-        import pdb; pdb.set_trace()
-
         context_emb, action_embs = self.get_context_and_action_embeddings(event)
 
         example_string = ""
