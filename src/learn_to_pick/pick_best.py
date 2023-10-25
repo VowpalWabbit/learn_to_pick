@@ -48,7 +48,7 @@ class PickBestFeatureEmbedder(base.Embedder[PickBestEvent]):
 
     Attributes:
         model name (Any, optional): The type of embeddings to be used for feature representation. Defaults to BERT SentenceTransformer.
-    """ 
+    """
 
     def __init__(
         self, auto_embed: bool, model: Optional[Any] = None, *args: Any, **kwargs: Any
@@ -260,7 +260,7 @@ class PickBest(base.RLLoop[PickBestEvent]):
 
     Attributes:
         feature_embedder (PickBestFeatureEmbedder, optional): Is an advanced attribute. Responsible for embedding the `BasedOn` and `ToSelectFrom` inputs. If omitted, a default embedder is utilized.
-    """ 
+    """
 
     def __init__(
         self,
@@ -272,17 +272,17 @@ class PickBest(base.RLLoop[PickBestEvent]):
         context, actions = base.get_based_on_and_to_select_from(inputs=inputs)
         if not actions:
             raise ValueError(
-                "No variables using 'ToSelectFrom' found in the inputs. Please include at least one variable containing a list to select from." 
+                "No variables using 'ToSelectFrom' found in the inputs. Please include at least one variable containing a list to select from."
             )
 
         if len(list(actions.values())) > 1:
             raise ValueError(
-                "Only one variable using 'ToSelectFrom' can be provided in the inputs for PickBest run() call. Please provide only one variable containing a list to select from." 
+                "Only one variable using 'ToSelectFrom' can be provided in the inputs for PickBest run() call. Please provide only one variable containing a list to select from."
             )
 
         if not context:
             raise ValueError(
-                "No variables using 'BasedOn' found in the inputs. Please include at least one variable containing information to base the selected of ToSelectFrom on." 
+                "No variables using 'BasedOn' found in the inputs. Please include at least one variable containing information to base the selected of ToSelectFrom on."
             )
 
         event = PickBestEvent(inputs=inputs, to_select_from=actions, based_on=context)
@@ -352,7 +352,7 @@ class PickBest(base.RLLoop[PickBestEvent]):
             selection_scorer = base.AutoSelectionScorer(llm=llm)
         if policy and any(policy_args):
             logger.warning(
-                f"{list(policy_args.keys())} will be ignored since nontrivial policy is provided" 
+                f"{list(policy_args.keys())} will be ignored since nontrivial policy is provided"
             )
 
         return PickBest(
@@ -361,7 +361,7 @@ class PickBest(base.RLLoop[PickBestEvent]):
             metrics_step = metrics_step,
             metrics_window_size = metrics_window_size,
         )
-    
+
     @staticmethod
     def create_policy(
         feature_embedder: Optional[base.Embedder] = None,
@@ -374,7 +374,7 @@ class PickBest(base.RLLoop[PickBestEvent]):
         if feature_embedder:
             if "auto_embed" in kwargs:
                 logger.warning(
-                    "auto_embed will take no effect when explicit feature_embedder is provided" 
+                    "auto_embed will take no effect when explicit feature_embedder is provided"
                 )
             # turning auto_embed off for cli setting below
             auto_embed = False
