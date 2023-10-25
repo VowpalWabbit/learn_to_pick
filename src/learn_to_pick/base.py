@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-import os
 from abc import ABC, abstractmethod
 from typing import (
     TYPE_CHECKING,
@@ -189,6 +188,7 @@ class VwPolicy(Policy):
     ):
         super().__init__(*args, **kwargs)
         self.model_repo = model_repo
+        self.vw_cmd = vw_cmd
         self.workspace = self.model_repo.load(vw_cmd)
         self.feature_embedder = feature_embedder
         self.vw_logger = vw_logger
@@ -223,7 +223,7 @@ class Embedder(Generic[TEvent], ABC):
         pass
 
     @abstractmethod
-    def format(self, event: TEvent) -> str:
+    def format(self, event: TEvent) -> Any:
         ...
 
 
@@ -236,7 +236,7 @@ class SelectionScorer(Generic[TEvent], ABC):
     @abstractmethod
     def score_response(
         self, inputs: Dict[str, Any], picked: Any, event: TEvent
-    ) -> float:
+    ) -> Any:
         """
         Calculate and return the score for the selected response.
 
@@ -250,7 +250,7 @@ class SelectionScorer(Generic[TEvent], ABC):
             event (TEvent): Metadata associated with the selection event.
 
         Returns:
-            float: The calculated score for the selected response.
+            The calculated score for the selected response.
         """
         ...
 
@@ -311,6 +311,13 @@ class AutoSelectionScorer(SelectionScorer[Event]):
 class RLLoop(Generic[TEvent]):
     """
     The `RLLoop` class leverages a learned Policy for reinforcement learning.
+
+    The standard operation flow of this run() call includes a loop:
+            - The loop is invoked with inputs
+            - A decision is made based on the inputs.
+            - If a `selection_scorer` is provided, it is used to score the decision/selection.
+            - The score is used to update the internal Policy.
+            - The decision is returned.
 
     Attributes:
         - selection_scorer (Union[SelectionScorer, None]): Scorer for the selection. Can be set to None.
@@ -386,13 +393,13 @@ class RLLoop(Generic[TEvent]):
 
     def deactivate_selection_scorer(self) -> None:
         """
-        Deactivates the selection scorer, meaning that the chain will no longer attempt to use the selection scorer to score responses.
+        Deactivates the selection scorer, meaning that there will be no automatic scoring, and the policy will not be automatically updated.
         """
         self.selection_scorer_activated = False
 
     def activate_selection_scorer(self) -> None:
         """
-        Activates the selection scorer, meaning that the chain will attempt to use the selection scorer to score responses.
+        Activates the selection scorer, meaning that scoring happens automatically and the policy is updated automatically.
         """
         self.selection_scorer_activated = True
 
@@ -428,6 +435,14 @@ class RLLoop(Generic[TEvent]):
         ...
 
     def run(self, *args, **kwargs) -> Dict[str, Any]:
+        """
+        The standard operation flow of this run() call includes a loop:
+            - The loop is invoked with inputs
+            - A decision is made based on the inputs.
+            - If a `selection_scorer` is provided, it is used to score the decision/selection.
+            - The score is used to update the internal Policy.
+            - The decision is returned.
+        """
         if args and not kwargs:
             inputs = args[0]
         elif kwargs and not args:

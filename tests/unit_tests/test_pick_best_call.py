@@ -8,15 +8,17 @@ import learn_to_pick.base as rl_loop
 
 encoded_keyword = "[encoded]"
 
+
 class fake_llm_caller:
     def predict(self):
         return "hey"
+
 
 class fake_llm_caller_with_score:
     def predict(self):
         return "3"
 
-@pytest.mark.requires("vowpal_wabbit_next", "sentence_transformers")
+
 def test_multiple_ToSelectFrom_throws() -> None:
     pick = learn_to_pick.PickBest.create(
         llm=fake_llm_caller,
@@ -33,7 +35,6 @@ def test_multiple_ToSelectFrom_throws() -> None:
         )
 
 
-@pytest.mark.requires("vowpal_wabbit_next", "sentence_transformers")
 def test_missing_basedOn_from_throws() -> None:
     pick = learn_to_pick.PickBest.create(
         llm=fake_llm_caller,
@@ -46,7 +47,6 @@ def test_missing_basedOn_from_throws() -> None:
         pick.run(action=learn_to_pick.ToSelectFrom(actions))
 
 
-@pytest.mark.requires("vowpal_wabbit_next", "sentence_transformers")
 def test_ToSelectFrom_not_a_list_throws() -> None:
     pick = learn_to_pick.PickBest.create(
         llm=fake_llm_caller,
@@ -62,7 +62,6 @@ def test_ToSelectFrom_not_a_list_throws() -> None:
         )
 
 
-@pytest.mark.requires("vowpal_wabbit_next", "sentence_transformers")
 def test_update_with_delayed_score_with_auto_validator_throws() -> None:
     auto_val_llm = fake_llm_caller_with_score
     pick = learn_to_pick.PickBest.create(
@@ -86,7 +85,6 @@ def test_update_with_delayed_score_with_auto_validator_throws() -> None:
         )
 
 
-@pytest.mark.requires("vowpal_wabbit_next", "sentence_transformers")
 def test_update_with_delayed_score_force() -> None:
     # this LLM returns a number so that the auto validator will return that
     auto_val_llm = fake_llm_caller_with_score
@@ -110,7 +108,6 @@ def test_update_with_delayed_score_force() -> None:
     assert picked_metadata.selected.score == 100.0  # type: ignore
 
 
-@pytest.mark.requires("vowpal_wabbit_next", "sentence_transformers")
 def test_update_with_delayed_score() -> None:
     pick = learn_to_pick.PickBest.create(
         llm=fake_llm_caller,
@@ -130,12 +127,12 @@ def test_update_with_delayed_score() -> None:
     assert picked_metadata.selected.score == 100.0  # type: ignore
 
 
-@pytest.mark.requires("vowpal_wabbit_next", "sentence_transformers")
 def test_user_defined_scorer() -> None:
     class CustomSelectionScorer(learn_to_pick.SelectionScorer):
         def score_response(
             self,
             inputs: Dict[str, Any],
+            picked: Any,
             event: learn_to_pick.PickBestEvent,
         ) -> float:
             score = 200
@@ -157,13 +154,12 @@ def test_user_defined_scorer() -> None:
     assert picked_metadata.selected.score == 200.0  # type: ignore
 
 
-@pytest.mark.requires("vowpal_wabbit_next", "sentence_transformers")
 def test_everything_embedded() -> None:
     feature_embedder = learn_to_pick.PickBestFeatureEmbedder(
         auto_embed=False, model=MockEncoder()
     )
     pick = learn_to_pick.PickBest.create(
-        llm=fake_llm_caller, feature_embedder=feature_embedder, auto_embed=False
+        llm=fake_llm_caller, feature_embedder=feature_embedder
     )
 
     str1 = "0"
@@ -190,7 +186,6 @@ def test_everything_embedded() -> None:
     assert vw_str == expected
 
 
-@pytest.mark.requires("vowpal_wabbit_next", "sentence_transformers")
 def test_default_auto_embedder_is_off() -> None:
     feature_embedder = learn_to_pick.PickBestFeatureEmbedder(
         auto_embed=False, model=MockEncoder()
@@ -217,13 +212,12 @@ def test_default_auto_embedder_is_off() -> None:
     assert vw_str == expected
 
 
-@pytest.mark.requires("vowpal_wabbit_next", "sentence_transformers")
 def test_default_w_embeddings_off() -> None:
     feature_embedder = learn_to_pick.PickBestFeatureEmbedder(
         auto_embed=False, model=MockEncoder()
     )
     pick = learn_to_pick.PickBest.create(
-        llm=fake_llm_caller, feature_embedder=feature_embedder, auto_embed=False
+        llm=fake_llm_caller, feature_embedder=feature_embedder
     )
 
     str1 = "0"
@@ -244,13 +238,12 @@ def test_default_w_embeddings_off() -> None:
     assert vw_str == expected
 
 
-@pytest.mark.requires("vowpal_wabbit_next", "sentence_transformers")
 def test_default_w_embeddings_on() -> None:
     feature_embedder = learn_to_pick.PickBestFeatureEmbedder(
         auto_embed=True, model=MockEncoderReturnsList()
     )
     pick = learn_to_pick.PickBest.create(
-        llm=fake_llm_caller, feature_embedder=feature_embedder, auto_embed=True
+        llm=fake_llm_caller, feature_embedder=feature_embedder
     )
 
     str1 = "0"
@@ -271,13 +264,12 @@ def test_default_w_embeddings_on() -> None:
     assert vw_str == expected
 
 
-@pytest.mark.requires("vowpal_wabbit_next", "sentence_transformers")
 def test_default_embeddings_mixed_w_explicit_user_embeddings() -> None:
     feature_embedder = learn_to_pick.PickBestFeatureEmbedder(
         auto_embed=True, model=MockEncoderReturnsList()
     )
     pick = learn_to_pick.PickBest.create(
-        llm=fake_llm_caller, feature_embedder=feature_embedder, auto_embed=True
+        llm=fake_llm_caller, feature_embedder=feature_embedder
     )
 
     str1 = "0"
@@ -302,7 +294,6 @@ def test_default_embeddings_mixed_w_explicit_user_embeddings() -> None:
     assert vw_str == expected
 
 
-@pytest.mark.requires("vowpal_wabbit_next", "sentence_transformers")
 def test_default_no_scorer_specified() -> None:
     pick = learn_to_pick.PickBest.create(
         llm=fake_llm_caller_with_score,
@@ -319,7 +310,6 @@ def test_default_no_scorer_specified() -> None:
     assert picked_metadata.selected.score == 3.0  # type: ignore
 
 
-@pytest.mark.requires("vowpal_wabbit_next", "sentence_transformers")
 def test_explicitly_no_scorer() -> None:
     pick = learn_to_pick.PickBest.create(
         llm=fake_llm_caller,
@@ -337,7 +327,6 @@ def test_explicitly_no_scorer() -> None:
     assert picked_metadata.selected.score is None  # type: ignore
 
 
-@pytest.mark.requires("vowpal_wabbit_next", "sentence_transformers")
 def test_auto_scorer_with_user_defined_llm() -> None:
     scorer_llm = fake_llm_caller_with_score
     pick = learn_to_pick.PickBest.create(
@@ -356,7 +345,6 @@ def test_auto_scorer_with_user_defined_llm() -> None:
     assert picked_metadata.selected.score == 3  # type: ignore
 
 
-@pytest.mark.requires("vowpal_wabbit_next", "sentence_transformers")
 def test_activate_and_deactivate_scorer() -> None:
     llm = fake_llm_caller
     scorer_llm = fake_llm_caller_with_score

@@ -5,10 +5,12 @@ from learn_to_pick.base import (
     BasedOn,
     Embed,
     Embedder,
+    ModelRepository,
     Policy,
     SelectionScorer,
     ToSelectFrom,
     VwPolicy,
+    VwLogger,
     embed,
     stringify_embedding,
 )
@@ -47,8 +49,10 @@ __all__ = [
     "SelectionScorer",
     "AutoSelectionScorer",
     "Embedder",
+    "ModelRepository",
     "Policy",
     "VwPolicy",
+    "VwLogger",
     "embed",
     "stringify_embedding",
 ]
