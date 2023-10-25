@@ -58,7 +58,9 @@ class MetricsTrackerRollingWindow:
             self.sum -= old_val
 
         if self.step > 0 and self.feedback_count % self.step == 0:
-            self.history.append({"step": self.feedback_count, "score": self.sum / len(self.queue)})
+            self.history.append(
+                {"step": self.feedback_count, "score": self.sum / len(self.queue)}
+            )
 
     def to_pandas(self) -> "pd.DataFrame":
         import pandas as pd

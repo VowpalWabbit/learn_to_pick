@@ -155,12 +155,8 @@ def test_user_defined_scorer() -> None:
 
 
 def test_everything_embedded() -> None:
-    featurizer = learn_to_pick.PickBestFeaturizer(
-        auto_embed=False, model=MockEncoder()
-    )
-    pick = learn_to_pick.PickBest.create(
-        llm=fake_llm_caller, featurizer=featurizer
-    )
+    featurizer = learn_to_pick.PickBestFeaturizer(auto_embed=False, model=MockEncoder())
+    pick = learn_to_pick.PickBest.create(llm=fake_llm_caller, featurizer=featurizer)
 
     str1 = "0"
     str2 = "1"
@@ -187,12 +183,8 @@ def test_everything_embedded() -> None:
 
 
 def test_default_auto_embedder_is_off() -> None:
-    featurizer = learn_to_pick.PickBestFeaturizer(
-        auto_embed=False, model=MockEncoder()
-    )
-    pick = learn_to_pick.PickBest.create(
-        llm=fake_llm_caller, featurizer=featurizer
-    )
+    featurizer = learn_to_pick.PickBestFeaturizer(auto_embed=False, model=MockEncoder())
+    pick = learn_to_pick.PickBest.create(llm=fake_llm_caller, featurizer=featurizer)
 
     str1 = "0"
     str2 = "1"
@@ -213,12 +205,8 @@ def test_default_auto_embedder_is_off() -> None:
 
 
 def test_default_w_embeddings_off() -> None:
-    featurizer = learn_to_pick.PickBestFeaturizer(
-        auto_embed=False, model=MockEncoder()
-    )
-    pick = learn_to_pick.PickBest.create(
-        llm=fake_llm_caller, featurizer=featurizer
-    )
+    featurizer = learn_to_pick.PickBestFeaturizer(auto_embed=False, model=MockEncoder())
+    pick = learn_to_pick.PickBest.create(llm=fake_llm_caller, featurizer=featurizer)
 
     str1 = "0"
     str2 = "1"
@@ -242,9 +230,7 @@ def test_default_w_embeddings_on() -> None:
     featurizer = learn_to_pick.PickBestFeaturizer(
         auto_embed=True, model=MockEncoderReturnsList()
     )
-    pick = learn_to_pick.PickBest.create(
-        llm=fake_llm_caller, featurizer=featurizer
-    )
+    pick = learn_to_pick.PickBest.create(llm=fake_llm_caller, featurizer=featurizer)
 
     str1 = "0"
     str2 = "1"
@@ -268,9 +254,7 @@ def test_default_embeddings_mixed_w_explicit_user_embeddings() -> None:
     featurizer = learn_to_pick.PickBestFeaturizer(
         auto_embed=True, model=MockEncoderReturnsList()
     )
-    pick = learn_to_pick.PickBest.create(
-        llm=fake_llm_caller, featurizer=featurizer
-    )
+    pick = learn_to_pick.PickBest.create(llm=fake_llm_caller, featurizer=featurizer)
 
     str1 = "0"
     str2 = "1"

@@ -352,7 +352,7 @@ class PickBest(base.RLLoop[PickBestEvent]):
             logger.warning(
                 f"{[k for k, v in policy_args.items() if v]} will be ignored since nontrivial policy is provided, please set those arguments in the policy directly if needed"
             )
-        
+
         if policy_args["model_save_dir"] is None:
             policy_args["model_save_dir"] = "./"
         if policy_args["reset_model"] is None:
@@ -370,7 +370,7 @@ class PickBest(base.RLLoop[PickBestEvent]):
         vw_cmd: Optional[List[str]] = None,
         model_save_dir: str = "./",
         reset_model: bool = False,
-        rl_logs: Optional[Union[str, os.PathLike]] = None
+        rl_logs: Optional[Union[str, os.PathLike]] = None,
     ):
         if not featurizer:
             featurizer = PickBestFeaturizer(auto_embed=False)
@@ -384,12 +384,7 @@ class PickBest(base.RLLoop[PickBestEvent]):
                 )
         else:
             interactions += ["--interactions=::"]
-            vw_cmd = [
-                "--cb_explore_adf",
-                "--coin",
-                "--squarecb",
-                "--quiet",
-            ]
+            vw_cmd = ["--cb_explore_adf", "--coin", "--squarecb", "--quiet"]
 
         if featurizer.auto_embed:
             interactions += [
@@ -397,7 +392,7 @@ class PickBest(base.RLLoop[PickBestEvent]):
                 "--ignore_linear=@",
                 "--ignore_linear=#",
             ]
-        
+
         vw_cmd = interactions + vw_cmd
 
         return base.VwPolicy(
