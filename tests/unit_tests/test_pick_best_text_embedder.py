@@ -8,7 +8,7 @@ encoded_keyword = "[encoded]"
 
 
 def test_pickbest_textembedder_missing_context_throws() -> None:
-    feature_embedder = pick_best_chain.PickBestFeatureEmbedder(
+    featurizer = pick_best_chain.PickBestFeaturizer(
         auto_embed=False, model=MockEncoder()
     )
     named_action = {"action": ["0", "1", "2"]}
@@ -16,22 +16,22 @@ def test_pickbest_textembedder_missing_context_throws() -> None:
         inputs={}, to_select_from=named_action, based_on={}
     )
     with pytest.raises(ValueError):
-        feature_embedder.format(event)
+        featurizer.format(event)
 
 
 def test_pickbest_textembedder_missing_actions_throws() -> None:
-    feature_embedder = pick_best_chain.PickBestFeatureEmbedder(
+    featurizer = pick_best_chain.PickBestFeaturizer(
         auto_embed=False, model=MockEncoder()
     )
     event = pick_best_chain.PickBestEvent(
         inputs={}, to_select_from={}, based_on={"context": "context"}
     )
     with pytest.raises(ValueError):
-        feature_embedder.format(event)
+        featurizer.format(event)
 
 
 def test_pickbest_textembedder_no_label_no_emb() -> None:
-    feature_embedder = pick_best_chain.PickBestFeatureEmbedder(
+    featurizer = pick_best_chain.PickBestFeaturizer(
         auto_embed=False, model=MockEncoder()
     )
     named_actions = {"action1": ["0", "1", "2"]}
@@ -39,12 +39,12 @@ def test_pickbest_textembedder_no_label_no_emb() -> None:
     event = pick_best_chain.PickBestEvent(
         inputs={}, to_select_from=named_actions, based_on={"context": "context"}
     )
-    vw_ex_str = feature_embedder.format(event)
+    vw_ex_str = featurizer.format(event)
     assert vw_ex_str == expected
 
 
 def test_pickbest_textembedder_w_label_no_score_no_emb() -> None:
-    feature_embedder = pick_best_chain.PickBestFeatureEmbedder(
+    featurizer = pick_best_chain.PickBestFeaturizer(
         auto_embed=False, model=MockEncoder()
     )
     named_actions = {"action1": ["0", "1", "2"]}
@@ -56,12 +56,12 @@ def test_pickbest_textembedder_w_label_no_score_no_emb() -> None:
         based_on={"context": "context"},
         selected=selected,
     )
-    vw_ex_str = feature_embedder.format(event)
+    vw_ex_str = featurizer.format(event)
     assert vw_ex_str == expected
 
 
 def test_pickbest_textembedder_w_full_label_no_emb() -> None:
-    feature_embedder = pick_best_chain.PickBestFeatureEmbedder(
+    featurizer = pick_best_chain.PickBestFeaturizer(
         auto_embed=False, model=MockEncoder()
     )
     named_actions = {"action1": ["0", "1", "2"]}
@@ -75,12 +75,12 @@ def test_pickbest_textembedder_w_full_label_no_emb() -> None:
         based_on={"context": "context"},
         selected=selected,
     )
-    vw_ex_str = feature_embedder.format(event)
+    vw_ex_str = featurizer.format(event)
     assert vw_ex_str == expected
 
 
 def test_pickbest_textembedder_w_full_label_w_emb() -> None:
-    feature_embedder = pick_best_chain.PickBestFeatureEmbedder(
+    featurizer = pick_best_chain.PickBestFeaturizer(
         auto_embed=False, model=MockEncoder()
     )
     str1 = "0"
@@ -100,12 +100,12 @@ def test_pickbest_textembedder_w_full_label_w_emb() -> None:
     event = pick_best_chain.PickBestEvent(
         inputs={}, to_select_from=named_actions, based_on=context, selected=selected
     )
-    vw_ex_str = feature_embedder.format(event)
+    vw_ex_str = featurizer.format(event)
     assert vw_ex_str == expected
 
 
 def test_pickbest_textembedder_w_full_label_w_embed_and_keep() -> None:
-    feature_embedder = pick_best_chain.PickBestFeatureEmbedder(
+    featurizer = pick_best_chain.PickBestFeaturizer(
         auto_embed=False, model=MockEncoder()
     )
     str1 = "0"
@@ -125,12 +125,12 @@ def test_pickbest_textembedder_w_full_label_w_embed_and_keep() -> None:
     event = pick_best_chain.PickBestEvent(
         inputs={}, to_select_from=named_actions, based_on=context, selected=selected
     )
-    vw_ex_str = feature_embedder.format(event)
+    vw_ex_str = featurizer.format(event)
     assert vw_ex_str == expected
 
 
 def test_pickbest_textembedder_more_namespaces_no_label_no_emb() -> None:
-    feature_embedder = pick_best_chain.PickBestFeatureEmbedder(
+    featurizer = pick_best_chain.PickBestFeaturizer(
         auto_embed=False, model=MockEncoder()
     )
     named_actions = {"action1": [{"a": "0", "b": "0"}, "1", "2"]}
@@ -139,12 +139,12 @@ def test_pickbest_textembedder_more_namespaces_no_label_no_emb() -> None:
     event = pick_best_chain.PickBestEvent(
         inputs={}, to_select_from=named_actions, based_on=context
     )
-    vw_ex_str = feature_embedder.format(event)
+    vw_ex_str = featurizer.format(event)
     assert vw_ex_str == expected
 
 
 def test_pickbest_textembedder_more_namespaces_w_label_no_emb() -> None:
-    feature_embedder = pick_best_chain.PickBestFeatureEmbedder(
+    featurizer = pick_best_chain.PickBestFeaturizer(
         auto_embed=False, model=MockEncoder()
     )
     named_actions = {"action1": [{"a": "0", "b": "0"}, "1", "2"]}
@@ -154,12 +154,12 @@ def test_pickbest_textembedder_more_namespaces_w_label_no_emb() -> None:
     event = pick_best_chain.PickBestEvent(
         inputs={}, to_select_from=named_actions, based_on=context, selected=selected
     )
-    vw_ex_str = feature_embedder.format(event)
+    vw_ex_str = featurizer.format(event)
     assert vw_ex_str == expected
 
 
 def test_pickbest_textembedder_more_namespaces_w_full_label_no_emb() -> None:
-    feature_embedder = pick_best_chain.PickBestFeatureEmbedder(
+    featurizer = pick_best_chain.PickBestFeaturizer(
         auto_embed=False, model=MockEncoder()
     )
     named_actions = {"action1": [{"a": "0", "b": "0"}, "1", "2"]}
@@ -169,12 +169,12 @@ def test_pickbest_textembedder_more_namespaces_w_full_label_no_emb() -> None:
     event = pick_best_chain.PickBestEvent(
         inputs={}, to_select_from=named_actions, based_on=context, selected=selected
     )
-    vw_ex_str = feature_embedder.format(event)
+    vw_ex_str = featurizer.format(event)
     assert vw_ex_str == expected
 
 
 def test_pickbest_textembedder_more_namespaces_w_full_label_w_full_emb() -> None:
-    feature_embedder = pick_best_chain.PickBestFeatureEmbedder(
+    featurizer = pick_best_chain.PickBestFeaturizer(
         auto_embed=False, model=MockEncoder()
     )
 
@@ -201,14 +201,14 @@ def test_pickbest_textembedder_more_namespaces_w_full_label_w_full_emb() -> None
     event = pick_best_chain.PickBestEvent(
         inputs={}, to_select_from=named_actions, based_on=context, selected=selected
     )
-    vw_ex_str = feature_embedder.format(event)
+    vw_ex_str = featurizer.format(event)
     assert vw_ex_str == expected
 
 
 def test_pickbest_textembedder_more_namespaces_w_full_label_w_full_embed_and_keep() -> (
     None
 ):
-    feature_embedder = pick_best_chain.PickBestFeatureEmbedder(
+    featurizer = pick_best_chain.PickBestFeaturizer(
         auto_embed=False, model=MockEncoder()
     )
 
@@ -237,12 +237,12 @@ def test_pickbest_textembedder_more_namespaces_w_full_label_w_full_embed_and_kee
     event = pick_best_chain.PickBestEvent(
         inputs={}, to_select_from=named_actions, based_on=context, selected=selected
     )
-    vw_ex_str = feature_embedder.format(event)
+    vw_ex_str = featurizer.format(event)
     assert vw_ex_str == expected
 
 
 def test_pickbest_textembedder_more_namespaces_w_full_label_w_partial_emb() -> None:
-    feature_embedder = pick_best_chain.PickBestFeatureEmbedder(
+    featurizer = pick_best_chain.PickBestFeaturizer(
         auto_embed=False, model=MockEncoder()
     )
 
@@ -270,12 +270,12 @@ def test_pickbest_textembedder_more_namespaces_w_full_label_w_partial_emb() -> N
     event = pick_best_chain.PickBestEvent(
         inputs={}, to_select_from=named_actions, based_on=context, selected=selected
     )
-    vw_ex_str = feature_embedder.format(event)
+    vw_ex_str = featurizer.format(event)
     assert vw_ex_str == expected
 
 
 def test_pickbest_textembedder_more_namespaces_w_full_label_w_partial_emakeep() -> None:
-    feature_embedder = pick_best_chain.PickBestFeatureEmbedder(
+    featurizer = pick_best_chain.PickBestFeaturizer(
         auto_embed=False, model=MockEncoder()
     )
 
@@ -306,12 +306,12 @@ def test_pickbest_textembedder_more_namespaces_w_full_label_w_partial_emakeep() 
     event = pick_best_chain.PickBestEvent(
         inputs={}, to_select_from=named_actions, based_on=context, selected=selected
     )
-    vw_ex_str = feature_embedder.format(event)
+    vw_ex_str = featurizer.format(event)
     assert vw_ex_str == expected
 
 
 def test_raw_features_underscored() -> None:
-    feature_embedder = pick_best_chain.PickBestFeatureEmbedder(
+    featurizer = pick_best_chain.PickBestFeaturizer(
         auto_embed=False, model=MockEncoder()
     )
     str1 = "this is a long string"
@@ -331,7 +331,7 @@ def test_raw_features_underscored() -> None:
     event = pick_best_chain.PickBestEvent(
         inputs={}, to_select_from=named_actions, based_on=context
     )
-    vw_ex_str = feature_embedder.format(event)
+    vw_ex_str = featurizer.format(event)
     assert vw_ex_str == expected_no_embed
 
     # Just embeddings
@@ -341,7 +341,7 @@ def test_raw_features_underscored() -> None:
     event = pick_best_chain.PickBestEvent(
         inputs={}, to_select_from=named_actions, based_on=context
     )
-    vw_ex_str = feature_embedder.format(event)
+    vw_ex_str = featurizer.format(event)
     assert vw_ex_str == expected_embed
 
     # Embeddings and raw features
@@ -351,5 +351,5 @@ def test_raw_features_underscored() -> None:
     event = pick_best_chain.PickBestEvent(
         inputs={}, to_select_from=named_actions, based_on=context
     )
-    vw_ex_str = feature_embedder.format(event)
+    vw_ex_str = featurizer.format(event)
     assert vw_ex_str == expected_embed_and_keep

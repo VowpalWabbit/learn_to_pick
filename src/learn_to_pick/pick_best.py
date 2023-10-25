@@ -42,9 +42,9 @@ class PickBestEvent(base.Event[PickBestSelected]):
         self.based_on = based_on
 
 
-class PickBestFeatureEmbedder(base.Embedder[PickBestEvent]):
+class PickBestFeaturizer(base.Featurizer[PickBestEvent]):
     """
-    Text Embedder class that embeds the `BasedOn` and `ToSelectFrom` inputs into a format that can be used by the learning policy
+    Text Featurizer class that embeds the `BasedOn` and `ToSelectFrom` inputs into a format that can be used by the learning policy
 
     Attributes:
         model name (Any, optional): The type of embeddings to be used for feature representation. Defaults to BERT SentenceTransformer.
@@ -259,7 +259,7 @@ class PickBest(base.RLLoop[PickBestEvent]):
         RLLoop
 
     Attributes:
-        feature_embedder (PickBestFeatureEmbedder, optional): Is an advanced attribute. Responsible for embedding the `BasedOn` and `ToSelectFrom` inputs. If omitted, a default embedder is utilized.
+        featurizer (PickBestFeaturizer, optional): Is an advanced attribute. Responsible for embedding the `BasedOn` and `ToSelectFrom` inputs. If omitted, a default embedder is utilized.
     """
 
     def _call_before_predict(self, inputs: Dict[str, Any]) -> PickBestEvent:
@@ -341,11 +341,11 @@ class PickBest(base.RLLoop[PickBestEvent]):
             selection_scorer = base.AutoSelectionScorer(llm=llm)
 
         policy_args = {
-            "feature_embedder": kwargs.pop("feature_embedder", None),
+            "featurizer": kwargs.pop("featurizer", None),
             "vw_cmd": kwargs.pop("vw_cmd", None),
             "model_save_dir": kwargs.pop("model_save_dir", None),
             "reset_model": kwargs.pop("reset_model", None),
-            "vw_logs": kwargs.pop("vw_logs", None),
+            "rl_logs": kwargs.pop("rl_logs", None),
         }
 
         if policy and any(policy_args.values()):
@@ -366,14 +366,14 @@ class PickBest(base.RLLoop[PickBestEvent]):
 
     @staticmethod
     def create_policy(
-        feature_embedder: Optional[base.Embedder] = None,
+        featurizer: Optional[base.Featurizer] = None,
         vw_cmd: Optional[List[str]] = None,
         model_save_dir: str = "./",
         reset_model: bool = False,
-        vw_logs: Optional[Union[str, os.PathLike]] = None
+        rl_logs: Optional[Union[str, os.PathLike]] = None
     ):
-        if not feature_embedder:
-            feature_embedder = PickBestFeatureEmbedder(auto_embed=False)
+        if not featurizer:
+            featurizer = PickBestFeaturizer(auto_embed=False)
 
         vw_cmd = vw_cmd or []
         interactions = []
@@ -391,7 +391,7 @@ class PickBest(base.RLLoop[PickBestEvent]):
                 "--quiet",
             ]
 
-        if feature_embedder.auto_embed:
+        if featurizer.auto_embed:
             interactions += [
                 "--interactions=@#",
                 "--ignore_linear=@",
@@ -405,8 +405,8 @@ class PickBest(base.RLLoop[PickBestEvent]):
                 model_save_dir, with_history=True, reset=reset_model
             ),
             vw_cmd=vw_cmd,
-            feature_embedder=feature_embedder,
-            vw_logger=base.VwLogger(vw_logs),
+            featurizer=featurizer,
+            vw_logger=base.VwLogger(rl_logs),
         )
 
     def _default_policy(self):
