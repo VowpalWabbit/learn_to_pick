@@ -181,7 +181,7 @@ class VwPolicy(Policy):
         self,
         model_repo: ModelRepository,
         vw_cmd: List[str],
-        feature_embedder: Embedder,
+        featurizer: Featurizer,
         vw_logger: VwLogger,
         *args: Any,
         **kwargs: Any,
@@ -190,7 +190,7 @@ class VwPolicy(Policy):
         self.model_repo = model_repo
         self.vw_cmd = vw_cmd
         self.workspace = self.model_repo.load(vw_cmd)
-        self.feature_embedder = feature_embedder
+        self.featurizer = featurizer
         self.vw_logger = vw_logger
 
     def predict(self, event: TEvent) -> Any:
@@ -198,27 +198,27 @@ class VwPolicy(Policy):
 
         text_parser = vw.TextFormatParser(self.workspace)
         return self.workspace.predict_one(
-            parse_lines(text_parser, self.feature_embedder.format(event))
+            parse_lines(text_parser, self.featurizer.format(event))
         )
 
     def learn(self, event: TEvent) -> None:
         import vowpal_wabbit_next as vw
 
-        vw_ex = self.feature_embedder.format(event)
+        vw_ex = self.featurizer.format(event)
         text_parser = vw.TextFormatParser(self.workspace)
         multi_ex = parse_lines(text_parser, vw_ex)
         self.workspace.learn_one(multi_ex)
 
     def log(self, event: TEvent) -> None:
         if self.vw_logger.logging_enabled():
-            vw_ex = self.feature_embedder.format(event)
+            vw_ex = self.featurizer.format(event)
             self.vw_logger.log(vw_ex)
 
     def save(self) -> None:
         self.model_repo.save(self.workspace)
 
 
-class Embedder(Generic[TEvent], ABC):
+class Featurizer(Generic[TEvent], ABC):
     def __init__(self, *args: Any, **kwargs: Any):
         pass
 
@@ -325,12 +325,12 @@ class RLLoop(Generic[TEvent]):
         - metrics (Optional[Union[MetricsTrackerRollingWindow, MetricsTrackerAverage]]): Tracker for metrics, can be set to None.
 
     Initialization Attributes:
-        - feature_embedder (Embedder): Embedder used for the `BasedOn` and `ToSelectFrom` inputs.
+        - featurizer (Featurizer): Featurizer used for the `BasedOn` and `ToSelectFrom` inputs.
         - model_save_dir (str, optional): Directory for saving the VW model. Default is the current directory.
         - reset_model (bool): If set to True, the model starts training from scratch. Default is False.
         - vw_cmd (List[str], optional): Command line arguments for the VW model.
         - policy (Type[VwPolicy]): Policy used by the chain.
-        - vw_logs (Optional[Union[str, os.PathLike]]): Path for the VW logs.
+        - rl_logs (Optional[Union[str, os.PathLike]]): Path for the VW logs.
         - metrics_step (int): Step for the metrics tracker. Default is -1. If set without metrics_window_size, average metrics will be tracked, otherwise rolling window metrics will be tracked.
         - metrics_window_size (int): Window size for the metrics tracker. Default is -1. If set, rolling window metrics will be tracked.
 

@@ -257,9 +257,9 @@ The default `VwPolicy` is initialized with some default arguments. The default e
 
 The `VwPolicy`'s data files can be stored and examined or used to do [off policy evaluation](https://vowpalwabbit.org/docs/vowpal_wabbit/python/latest/tutorials/off_policy_evaluation.html) for hyper parameter tuning.
 
-The way to do this is to set a log file path to `vw_logs` on chain creation:
+The way to do this is to set a log file path to `rl_logs` on chain creation:
 
-`picker = learn_to_pick.PickBest.create(vw_logs=<path to log FILE>, [...])`
+`picker = learn_to_pick.PickBest.create(rl_logs=<path to log FILE>, [...])`
 
 ### Advanced featurization options
 
@@ -267,17 +267,17 @@ The way to do this is to set a log file path to `vw_logs` on chain creation:
 
 By default the input that is wrapped (`ToSelectFrom`, `BasedOn`) is not tampered with. This might not be sufficient featurization, so based on how complex the scenario is you can set auto-embeddings to ON
 
-`picker = learn_to_pick.PickBest.create(feature_embedder=learn_to_pick.PickBestFeatureEmbedder(auto_embed=True), [...])`
+`picker = learn_to_pick.PickBest.create(featurizer=learn_to_pick.PickBestFeaturizer(auto_embed=True), [...])`
 
 This will produce more complex embeddings and featurizations of the inputs, likely accelerating RL learning, albeit at the cost of increased runtime.
 
-By default, [sbert.net's sentence_transformers's ](https://www.sbert.net/docs/pretrained_models.html#model-overview) `all-mpnet-base-v2` model will be used for these embeddings but you can set a different embeddings model by initializing feature_embedder with a different model. You could also set an entirely different embeddings encoding object, as long as it has an `encode()` function that returns a list of the encodings.
+By default, [sbert.net's sentence_transformers's ](https://www.sbert.net/docs/pretrained_models.html#model-overview) `all-mpnet-base-v2` model will be used for these embeddings but you can set a different embeddings model by initializing featurizer with a different model. You could also set an entirely different embeddings encoding object, as long as it has an `encode()` function that returns a list of the encodings.
 
 ```python
 from sentence_transformers import SentenceTransformer
 
 picker = learn_to_pick.PickBest.create(
-    feature_embedder=learn_to_pick.PickBestFeatureEmbedder(
+    featurizer=learn_to_pick.PickBestFeaturizer(
         auto_embed=True,
         model=SentenceTransformer("all-mpnet-base-v2")
     ),
