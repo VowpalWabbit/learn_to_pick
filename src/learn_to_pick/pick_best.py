@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional, Tuple, Type, Union
+from typing import Any, Dict, List, Optional, Tuple, Type, Union, Iterable
+from itertools import chain
 import os
 
 from learn_to_pick import base
@@ -41,6 +42,29 @@ class PickBestEvent(base.Event[PickBestSelected]):
         self.to_select_from = to_select_from
         self.based_on = based_on
 
+class VwTxt:
+    @staticmethod
+    def embedding(embedding: List[float]) -> str:
+        return " ".join([f"{i}:{e}" for i, e in enumerate(embedding)])
+    
+    @staticmethod
+    def features(features: Union[str, List[str]]) -> str:
+        return " ".join(features) if isinstance(features, list) else features
+    
+    @staticmethod
+    def _namespaces(ns: Iterable[Tuple[str, Union[str, List[str]]]]):
+        return " ".join(
+            f'|{k} {VwTxt.features(v)}' for k, v in ns
+        )
+    
+    @staticmethod
+    def ns(ns: Union[Iterable[Tuple[str, Any]], List[Dict[str, Any]], Dict[str, Any]]):
+        if isinstance(ns, List):
+            ns = chain.from_iterable(map(dict.items, ns))
+        if isinstance(ns, Dict):
+            ns = ns.items()
+        return VwTxt._namespaces(ns)
+        
 
 class PickBestFeaturizer(base.Featurizer[PickBestEvent]):
     """
@@ -148,41 +172,26 @@ class PickBestFeaturizer(base.Featurizer[PickBestEvent]):
         context_emb, action_embs = self.get_context_and_action_embeddings(event)
         indexed_dot_product = self.get_indexed_dot_product(context_emb, action_embs)
 
-        action_lines = []
+        nactions = len(action_embs)
+        def _tolist(v):
+            return v if isinstance(v, list) else [v]
+        
+        labels = ['' for _ in range(nactions)]
+        if cost is not None:
+            labels[chosen_action] = f"{chosen_action}:{cost}:{prob} "
+
+        dotprods = [{} for _ in range(nactions)]
         for i, action in enumerate(action_embs):
-            line_parts = []
-            dot_prods = []
-            if cost is not None and chosen_action == i:
-                line_parts.append(f"{chosen_action}:{cost}:{prob}")
-            for ns, action in action.items():
-                line_parts.append(f"|{ns}")
-                elements = action if isinstance(action, list) else [action]
-                nsa = []
-                for elem in elements:
-                    line_parts.append(f"{elem}")
-                    ns_a = f"{ns}={elem}"
-                    nsa.append(ns_a)
-                    for k, v in indexed_dot_product.items():
-                        dot_prods.append(v[ns_a])
-                nsa_str = " ".join(nsa)
-                line_parts.append(f"|# {nsa_str}")
+            action['#'] = [f'{k}={v}' for k, _v in action.items() for v in _tolist(_v)]
+            dotprods[i] = [v[f] for v in indexed_dot_product.values() for f in action['#']]
 
-            line_parts.append(f"|dotprod {self._str(dot_prods)}")
-            action_lines.append(" ".join(line_parts))
+        actions_str = [f'{l}{VwTxt.ns(a)} |dotprod {VwTxt.embedding(dp)}' for l, a, dp in zip(labels, action_embs, dotprods)]
 
-        shared = []
         for item in context_emb:
-            for ns, context in item.items():
-                shared.append(f"|{ns}")
-                elements = context if isinstance(context, list) else [context]
-                nsc = []
-                for elem in elements:
-                    shared.append(f"{elem}")
-                    nsc.append(f"{ns}={elem}")
-                nsc_str = " ".join(nsc)
-                shared.append(f"|@ {nsc_str}")
+            item['@'] = [f'{k}={v}' for k, _v in item.items() for v in _tolist(_v)]
+        shared_str = f'shared {VwTxt.ns(context_emb)}'
 
-        return "shared " + " ".join(shared) + "\n" + "\n".join(action_lines)
+        return '\n'.join([shared_str] + actions_str)
 
     def format_auto_embed_off(self, event: PickBestEvent) -> str:
         """
@@ -190,28 +199,15 @@ class PickBestFeaturizer(base.Featurizer[PickBestEvent]):
         """
         chosen_action, cost, prob = self.get_label(event)
         context_emb, action_embs = self.get_context_and_action_embeddings(event)
+        nactions = len(action_embs)
 
-        example_string = ""
-        example_string += "shared "
-        for context_item in context_emb:
-            for ns, based_on in context_item.items():
-                e = " ".join(based_on) if isinstance(based_on, list) else based_on
-                example_string += f"|{ns} {e} "
-        example_string += "\n"
+        context_str = f"shared {VwTxt.ns(context_emb)}"
 
-        for i, action in enumerate(action_embs):
-            if cost is not None and chosen_action == i:
-                example_string += f"{chosen_action}:{cost}:{prob} "
-            for ns, action_embedding in action.items():
-                e = (
-                    " ".join(action_embedding)
-                    if isinstance(action_embedding, list)
-                    else action_embedding
-                )
-                example_string += f"|{ns} {e} "
-            example_string += "\n"
-        # Strip the last newline
-        return example_string[:-1]
+        labels = ['' for _ in range(nactions)]
+        if cost is not None:
+            labels[chosen_action] = f"{chosen_action}:{cost}:{prob} "
+        actions_str = [f'{l}{VwTxt.ns(a)}' for a, l in zip(action_embs, labels)]
+        return '\n'.join([context_str] + actions_str)
 
     def format(self, event: PickBestEvent) -> str:
         if self.auto_embed:
