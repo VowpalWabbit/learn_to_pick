@@ -87,10 +87,6 @@ class PickBestFeaturizer(base.Featurizer[PickBestEvent]):
         self.model = model
         self.auto_embed = auto_embed
 
-    @staticmethod
-    def _str(embedding: List[float]) -> str:
-        return " ".join([f"{i}:{e}" for i, e in enumerate(embedding)])
-
     def get_label(self, event: PickBestEvent) -> tuple:
         cost = None
         if event.selected:
