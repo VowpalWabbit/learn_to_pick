@@ -1,5 +1,5 @@
 import pytest
-from test_utils import MockEncoder
+from test_utils import MockEncoder, assert_vw_ex_equals
 
 import learn_to_pick.base as rl_chain
 import learn_to_pick.pick_best as pick_best_chain
@@ -40,7 +40,7 @@ def test_pickbest_textembedder_no_label_no_emb() -> None:
         inputs={}, to_select_from=named_actions, based_on={"context": "context"}
     )
     vw_ex_str = featurizer.format(event)
-    assert vw_ex_str == expected
+    assert_vw_ex_equals(vw_ex_str, expected)
 
 
 def test_pickbest_textembedder_w_label_no_score_no_emb() -> None:
@@ -57,7 +57,7 @@ def test_pickbest_textembedder_w_label_no_score_no_emb() -> None:
         selected=selected,
     )
     vw_ex_str = featurizer.format(event)
-    assert vw_ex_str == expected
+    assert_vw_ex_equals(vw_ex_str, expected)
 
 
 def test_pickbest_textembedder_w_full_label_no_emb() -> None:
@@ -76,7 +76,7 @@ def test_pickbest_textembedder_w_full_label_no_emb() -> None:
         selected=selected,
     )
     vw_ex_str = featurizer.format(event)
-    assert vw_ex_str == expected
+    assert_vw_ex_equals(vw_ex_str, expected)
 
 
 def test_pickbest_textembedder_w_full_label_w_emb() -> None:
@@ -101,7 +101,7 @@ def test_pickbest_textembedder_w_full_label_w_emb() -> None:
         inputs={}, to_select_from=named_actions, based_on=context, selected=selected
     )
     vw_ex_str = featurizer.format(event)
-    assert vw_ex_str == expected
+    assert_vw_ex_equals(vw_ex_str, expected)
 
 
 def test_pickbest_textembedder_w_full_label_w_embed_and_keep() -> None:
@@ -126,7 +126,7 @@ def test_pickbest_textembedder_w_full_label_w_embed_and_keep() -> None:
         inputs={}, to_select_from=named_actions, based_on=context, selected=selected
     )
     vw_ex_str = featurizer.format(event)
-    assert vw_ex_str == expected
+    assert_vw_ex_equals(vw_ex_str, expected)
 
 
 def test_pickbest_textembedder_more_namespaces_no_label_no_emb() -> None:
@@ -140,7 +140,7 @@ def test_pickbest_textembedder_more_namespaces_no_label_no_emb() -> None:
         inputs={}, to_select_from=named_actions, based_on=context
     )
     vw_ex_str = featurizer.format(event)
-    assert vw_ex_str == expected
+    assert_vw_ex_equals(vw_ex_str, expected)
 
 
 def test_pickbest_textembedder_more_namespaces_w_label_no_emb() -> None:
@@ -155,7 +155,7 @@ def test_pickbest_textembedder_more_namespaces_w_label_no_emb() -> None:
         inputs={}, to_select_from=named_actions, based_on=context, selected=selected
     )
     vw_ex_str = featurizer.format(event)
-    assert vw_ex_str == expected
+    assert_vw_ex_equals(vw_ex_str, expected)
 
 
 def test_pickbest_textembedder_more_namespaces_w_full_label_no_emb() -> None:
@@ -170,7 +170,7 @@ def test_pickbest_textembedder_more_namespaces_w_full_label_no_emb() -> None:
         inputs={}, to_select_from=named_actions, based_on=context, selected=selected
     )
     vw_ex_str = featurizer.format(event)
-    assert vw_ex_str == expected
+    assert_vw_ex_equals(vw_ex_str, expected)
 
 
 def test_pickbest_textembedder_more_namespaces_w_full_label_w_full_emb() -> None:
@@ -202,7 +202,7 @@ def test_pickbest_textembedder_more_namespaces_w_full_label_w_full_emb() -> None
         inputs={}, to_select_from=named_actions, based_on=context, selected=selected
     )
     vw_ex_str = featurizer.format(event)
-    assert vw_ex_str == expected
+    assert_vw_ex_equals(vw_ex_str, expected)
 
 
 def test_pickbest_textembedder_more_namespaces_w_full_label_w_full_embed_and_keep() -> (
@@ -238,7 +238,7 @@ def test_pickbest_textembedder_more_namespaces_w_full_label_w_full_embed_and_kee
         inputs={}, to_select_from=named_actions, based_on=context, selected=selected
     )
     vw_ex_str = featurizer.format(event)
-    assert vw_ex_str == expected
+    assert_vw_ex_equals(vw_ex_str, expected)
 
 
 def test_pickbest_textembedder_more_namespaces_w_full_label_w_partial_emb() -> None:
@@ -267,7 +267,7 @@ def test_pickbest_textembedder_more_namespaces_w_full_label_w_partial_emb() -> N
         inputs={}, to_select_from=named_actions, based_on=context, selected=selected
     )
     vw_ex_str = featurizer.format(event)
-    assert vw_ex_str == expected
+    assert_vw_ex_equals(vw_ex_str, expected)
 
 
 def test_pickbest_textembedder_more_namespaces_w_full_label_w_partial_emakeep() -> None:
@@ -300,7 +300,7 @@ def test_pickbest_textembedder_more_namespaces_w_full_label_w_partial_emakeep() 
         inputs={}, to_select_from=named_actions, based_on=context, selected=selected
     )
     vw_ex_str = featurizer.format(event)
-    assert vw_ex_str == expected
+    assert_vw_ex_equals(vw_ex_str, expected)
 
 
 def test_raw_features_underscored() -> None:
@@ -325,7 +325,7 @@ def test_raw_features_underscored() -> None:
         inputs={}, to_select_from=named_actions, based_on=context
     )
     vw_ex_str = featurizer.format(event)
-    assert vw_ex_str == expected_no_embed
+    assert_vw_ex_equals(vw_ex_str, expected_no_embed)
 
     # Just embeddings
     named_actions = {"action": rl_chain.Embed([str1])}
@@ -335,7 +335,7 @@ def test_raw_features_underscored() -> None:
         inputs={}, to_select_from=named_actions, based_on=context
     )
     vw_ex_str = featurizer.format(event)
-    assert vw_ex_str == expected_embed
+    assert_vw_ex_equals(vw_ex_str, expected_embed)
 
     # Embeddings and raw features
     named_actions = {"action": rl_chain.EmbedAndKeep([str1])}
@@ -345,4 +345,4 @@ def test_raw_features_underscored() -> None:
         inputs={}, to_select_from=named_actions, based_on=context
     )
     vw_ex_str = featurizer.format(event)
-    assert vw_ex_str == expected_embed_and_keep
+    assert_vw_ex_equals(vw_ex_str, expected_embed_and_keep)

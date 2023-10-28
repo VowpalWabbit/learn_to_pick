@@ -1,7 +1,7 @@
 from typing import Any, Dict
 
 import pytest
-from test_utils import MockEncoder, MockEncoderReturnsList
+from test_utils import MockEncoder, MockEncoderReturnsList, assert_vw_ex_equals
 
 import learn_to_pick
 import learn_to_pick.base as rl_loop
@@ -179,7 +179,7 @@ def test_everything_embedded() -> None:
     )
     picked_metadata = response["picked_metadata"]  # type: ignore
     vw_str = featurizer.format(picked_metadata)  # type: ignore
-    assert vw_str == expected
+    assert_vw_ex_equals(vw_str, expected)
 
 
 def test_default_auto_embedder_is_off() -> None:
@@ -201,7 +201,7 @@ def test_default_auto_embedder_is_off() -> None:
     )
     picked_metadata = response["picked_metadata"]  # type: ignore
     vw_str = featurizer.format(picked_metadata)  # type: ignore
-    assert vw_str == expected
+    assert_vw_ex_equals(vw_str, expected)
 
 
 def test_default_w_embeddings_off() -> None:
@@ -223,7 +223,7 @@ def test_default_w_embeddings_off() -> None:
     )
     picked_metadata = response["picked_metadata"]  # type: ignore
     vw_str = featurizer.format(picked_metadata)  # type: ignore
-    assert vw_str == expected
+    assert_vw_ex_equals(vw_str, expected)
 
 
 def test_default_w_embeddings_on() -> None:
@@ -247,7 +247,7 @@ def test_default_w_embeddings_on() -> None:
     )
     picked_metadata = response["picked_metadata"]  # type: ignore
     vw_str = featurizer.format(picked_metadata)  # type: ignore
-    assert vw_str == expected
+    assert_vw_ex_equals(vw_str, expected)
 
 
 def test_default_embeddings_mixed_w_explicit_user_embeddings() -> None:
@@ -275,7 +275,7 @@ def test_default_embeddings_mixed_w_explicit_user_embeddings() -> None:
     )
     picked_metadata = response["picked_metadata"]  # type: ignore
     vw_str = featurizer.format(picked_metadata)  # type: ignore
-    assert vw_str == expected
+    assert_vw_ex_equals(vw_str, expected)
 
 
 def test_default_no_scorer_specified() -> None:
