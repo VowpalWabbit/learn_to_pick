@@ -15,7 +15,7 @@ def test_simple_context_str_no_emb() -> None:
 
 def test_simple_context_str_w_emb() -> None:
     str1 = "test"
-    encoded_str1 = base.stringify_embedding(list(encoded_keyword + str1))
+    encoded_str1 = base._stringify_embedding(list(encoded_keyword + str1))
     expected = [{"a_namespace": encoded_str1}]
     assert base.embed(base.Embed(str1), MockEncoder(), "a_namespace") == expected
     expected_embed_and_keep = [{"a_namespace": str1 + " " + encoded_str1}]
@@ -28,7 +28,7 @@ def test_simple_context_str_w_emb() -> None:
 def test_simple_context_str_w_nested_emb() -> None:
     # nested embeddings, innermost wins
     str1 = "test"
-    encoded_str1 = base.stringify_embedding(list(encoded_keyword + str1))
+    encoded_str1 = base._stringify_embedding(list(encoded_keyword + str1))
     expected = [{"a_namespace": encoded_str1}]
     assert (
         base.embed(base.EmbedAndKeep(base.Embed(str1)), MockEncoder(), "a_namespace")
@@ -49,7 +49,7 @@ def test_context_w_namespace_no_emb() -> None:
 
 def test_context_w_namespace_w_emb() -> None:
     str1 = "test"
-    encoded_str1 = base.stringify_embedding(list(encoded_keyword + str1))
+    encoded_str1 = base._stringify_embedding(list(encoded_keyword + str1))
     expected = [{"test_namespace": encoded_str1}]
     assert base.embed({"test_namespace": base.Embed(str1)}, MockEncoder()) == expected
     expected_embed_and_keep = [{"test_namespace": str1 + " " + encoded_str1}]
@@ -61,7 +61,7 @@ def test_context_w_namespace_w_emb() -> None:
 
 def test_context_w_namespace_w_emb2() -> None:
     str1 = "test"
-    encoded_str1 = base.stringify_embedding(list(encoded_keyword + str1))
+    encoded_str1 = base._stringify_embedding(list(encoded_keyword + str1))
     expected = [{"test_namespace": encoded_str1}]
     assert base.embed(base.Embed({"test_namespace": str1}), MockEncoder()) == expected
     expected_embed_and_keep = [{"test_namespace": str1 + " " + encoded_str1}]
@@ -74,7 +74,7 @@ def test_context_w_namespace_w_emb2() -> None:
 def test_context_w_namespace_w_some_emb() -> None:
     str1 = "test1"
     str2 = "test2"
-    encoded_str2 = base.stringify_embedding(list(encoded_keyword + str2))
+    encoded_str2 = base._stringify_embedding(list(encoded_keyword + str2))
     expected = [{"test_namespace": str1, "test_namespace2": encoded_str2}]
     assert (
         base.embed(
@@ -107,9 +107,9 @@ def test_simple_action_strlist_w_emb() -> None:
     str1 = "test1"
     str2 = "test2"
     str3 = "test3"
-    encoded_str1 = base.stringify_embedding(list(encoded_keyword + str1))
-    encoded_str2 = base.stringify_embedding(list(encoded_keyword + str2))
-    encoded_str3 = base.stringify_embedding(list(encoded_keyword + str3))
+    encoded_str1 = base._stringify_embedding(list(encoded_keyword + str1))
+    encoded_str2 = base._stringify_embedding(list(encoded_keyword + str2))
+    encoded_str3 = base._stringify_embedding(list(encoded_keyword + str3))
     expected = [
         {"a_namespace": encoded_str1},
         {"a_namespace": encoded_str2},
@@ -134,8 +134,8 @@ def test_simple_action_strlist_w_some_emb() -> None:
     str1 = "test1"
     str2 = "test2"
     str3 = "test3"
-    encoded_str2 = base.stringify_embedding(list(encoded_keyword + str2))
-    encoded_str3 = base.stringify_embedding(list(encoded_keyword + str3))
+    encoded_str2 = base._stringify_embedding(list(encoded_keyword + str2))
+    encoded_str3 = base._stringify_embedding(list(encoded_keyword + str3))
     expected = [
         {"a_namespace": str1},
         {"a_namespace": encoded_str2},
@@ -188,9 +188,9 @@ def test_action_w_namespace_w_emb() -> None:
     str1 = "test1"
     str2 = "test2"
     str3 = "test3"
-    encoded_str1 = base.stringify_embedding(list(encoded_keyword + str1))
-    encoded_str2 = base.stringify_embedding(list(encoded_keyword + str2))
-    encoded_str3 = base.stringify_embedding(list(encoded_keyword + str3))
+    encoded_str1 = base._stringify_embedding(list(encoded_keyword + str1))
+    encoded_str2 = base._stringify_embedding(list(encoded_keyword + str2))
+    encoded_str3 = base._stringify_embedding(list(encoded_keyword + str3))
     expected = [
         {"test_namespace": encoded_str1},
         {"test_namespace": encoded_str2},
@@ -229,9 +229,9 @@ def test_action_w_namespace_w_emb2() -> None:
     str1 = "test1"
     str2 = "test2"
     str3 = "test3"
-    encoded_str1 = base.stringify_embedding(list(encoded_keyword + str1))
-    encoded_str2 = base.stringify_embedding(list(encoded_keyword + str2))
-    encoded_str3 = base.stringify_embedding(list(encoded_keyword + str3))
+    encoded_str1 = base._stringify_embedding(list(encoded_keyword + str1))
+    encoded_str2 = base._stringify_embedding(list(encoded_keyword + str2))
+    encoded_str3 = base._stringify_embedding(list(encoded_keyword + str3))
     expected = [
         {"test_namespace1": encoded_str1},
         {"test_namespace2": encoded_str2},
@@ -274,8 +274,8 @@ def test_action_w_namespace_w_some_emb() -> None:
     str1 = "test1"
     str2 = "test2"
     str3 = "test3"
-    encoded_str2 = base.stringify_embedding(list(encoded_keyword + str2))
-    encoded_str3 = base.stringify_embedding(list(encoded_keyword + str3))
+    encoded_str2 = base._stringify_embedding(list(encoded_keyword + str2))
+    encoded_str3 = base._stringify_embedding(list(encoded_keyword + str3))
     expected = [
         {"test_namespace": str1},
         {"test_namespace": encoded_str2},
@@ -314,9 +314,9 @@ def test_action_w_namespace_w_emb_w_more_than_one_item_in_first_dict() -> None:
     str1 = "test1"
     str2 = "test2"
     str3 = "test3"
-    encoded_str1 = base.stringify_embedding(list(encoded_keyword + str1))
-    encoded_str2 = base.stringify_embedding(list(encoded_keyword + str2))
-    encoded_str3 = base.stringify_embedding(list(encoded_keyword + str3))
+    encoded_str1 = base._stringify_embedding(list(encoded_keyword + str1))
+    encoded_str2 = base._stringify_embedding(list(encoded_keyword + str2))
+    encoded_str3 = base._stringify_embedding(list(encoded_keyword + str3))
     expected = [
         {"test_namespace": encoded_str1, "test_namespace2": str1},
         {"test_namespace": encoded_str2, "test_namespace2": str2},
@@ -361,7 +361,7 @@ def test_one_namespace_w_list_of_features_no_emb() -> None:
 def test_one_namespace_w_list_of_features_w_some_emb() -> None:
     str1 = "test1"
     str2 = "test2"
-    encoded_str2 = base.stringify_embedding(list(encoded_keyword + str2))
+    encoded_str2 = base._stringify_embedding(list(encoded_keyword + str2))
     expected = [{"test_namespace": [str1, encoded_str2]}]
     assert (
         base.embed({"test_namespace": [str1, base.Embed(str2)]}, MockEncoder())
