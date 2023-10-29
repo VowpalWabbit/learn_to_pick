@@ -87,11 +87,11 @@ def EmbedAndKeep(anything: Any) -> Any:
 # helper functions
 
 
-def stringify_embedding(embedding: List) -> str:
+def _stringify_embedding(embedding: List) -> str:
     return " ".join([f"{i}:{e}" for i, e in enumerate(embedding)])
 
 
-def parse_lines(parser: "vw.TextFormatParser", input_str: str) -> List["vw.Example"]:
+def _parse_lines(parser: "vw.TextFormatParser", input_str: str) -> List["vw.Example"]:
     return [parser.parse_line(line) for line in input_str.split("\n")]
 
 
@@ -115,8 +115,8 @@ def get_based_on_and_to_select_from(inputs: Dict[str, Any]) -> Tuple[Dict, Dict]
 
     return based_on, to_select_from
 
-
-def prepare_inputs_for_autoembed(inputs: Dict[str, Any]) -> Dict[str, Any]:
+# Not used. Delete?
+def _prepare_inputs_for_autoembed(inputs: Dict[str, Any]) -> Dict[str, Any]:
     """
     go over all the inputs and if something is either wrapped in _ToSelectFrom or _BasedOn, and if their inner values are not already _Embed,
     then wrap them in EmbedAndKeep while retaining their _ToSelectFrom or _BasedOn status
@@ -195,7 +195,7 @@ class VwPolicy(Policy):
 
         text_parser = vw.TextFormatParser(self.workspace)
         return self.workspace.predict_one(
-            parse_lines(text_parser, self.featurizer.format(event))
+            _parse_lines(text_parser, self.featurizer.format(event))
         )
 
     def learn(self, event: TEvent) -> None:
@@ -203,7 +203,7 @@ class VwPolicy(Policy):
 
         vw_ex = self.featurizer.format(event)
         text_parser = vw.TextFormatParser(self.workspace)
-        multi_ex = parse_lines(text_parser, vw_ex)
+        multi_ex = _parse_lines(text_parser, vw_ex)
         self.workspace.learn_one(multi_ex)
 
     def log(self, event: TEvent) -> None:
@@ -489,20 +489,21 @@ class RLLoop(Generic[TEvent]):
         return {"picked": picked, "picked_metadata": event}
 
 
-def is_stringtype_instance(item: Any) -> bool:
+# Not used. Delete?
+def _is_stringtype_instance(item: Any) -> bool:
     """Helper function to check if an item is a string."""
     return isinstance(item, str) or (
         isinstance(item, _Embed) and isinstance(item.value, str)
     )
 
 
-def embed_string_type(
+def _embed_string_type(
     item: Union[str, _Embed], model: Any, namespace: Optional[str] = None
 ) -> Dict[str, Union[str, List[str]]]:
     """Helper function to embed a string or an _Embed object."""
     keep_str = ""
     if isinstance(item, _Embed):
-        encoded = stringify_embedding(model.encode(item.value))
+        encoded = _stringify_embedding(model.encode(item.value))
         if item.keep:
             keep_str = item.value.replace(" ", "_") + " "
     elif isinstance(item, str):
@@ -518,36 +519,36 @@ def embed_string_type(
     return {namespace: keep_str + encoded}
 
 
-def embed_dict_type(item: Dict, model: Any) -> Dict[str, Any]:
+def _embed_dict_type(item: Dict, model: Any) -> Dict[str, Any]:
     """Helper function to embed a dictionary item."""
     inner_dict: Dict = {}
     for ns, embed_item in item.items():
         if isinstance(embed_item, list):
             inner_dict[ns] = []
             for embed_list_item in embed_item:
-                embedded = embed_string_type(embed_list_item, model, ns)
+                embedded = _embed_string_type(embed_list_item, model, ns)
                 inner_dict[ns].append(embedded[ns])
         else:
-            inner_dict.update(embed_string_type(embed_item, model, ns))
+            inner_dict.update(_embed_string_type(embed_item, model, ns))
     return inner_dict
 
 
-def embed_list_type(
+def _embed_list_type(
     item: list, model: Any, namespace: Optional[str] = None
 ) -> List[Dict[str, Union[str, List[str]]]]:
     ret_list: List = []
     for embed_item in item:
         if isinstance(embed_item, dict):
-            ret_list.append(embed_dict_type(embed_item, model))
+            ret_list.append(_embed_dict_type(embed_item, model))
         elif isinstance(embed_item, list):
-            item_embedding = embed_list_type(embed_item, model, namespace)
+            item_embedding = _embed_list_type(embed_item, model, namespace)
             # Get the first key from the first dictionary
             first_key = next(iter(item_embedding[0]))
             # Group the values under that key
             grouping = {first_key: [item[first_key] for item in item_embedding]}
             ret_list.append(grouping)
         else:
-            ret_list.append(embed_string_type(embed_item, model, namespace))
+            ret_list.append(_embed_string_type(embed_item, model, namespace))
     return ret_list
 
 
@@ -569,10 +570,10 @@ def embed(
     if (isinstance(to_embed, _Embed) and isinstance(to_embed.value, str)) or isinstance(
         to_embed, str
     ):
-        return [embed_string_type(to_embed, model, namespace)]
+        return [_embed_string_type(to_embed, model, namespace)]
     elif isinstance(to_embed, dict):
-        return [embed_dict_type(to_embed, model)]
+        return [_embed_dict_type(to_embed, model)]
     elif isinstance(to_embed, list):
-        return embed_list_type(to_embed, model, namespace)
+        return _embed_list_type(to_embed, model, namespace)
     else:
         raise ValueError("Invalid input format for embedding")

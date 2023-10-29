@@ -11,8 +11,6 @@ from learn_to_pick.base import (
     ToSelectFrom,
     VwPolicy,
     VwLogger,
-    embed,
-    stringify_embedding,
 )
 from learn_to_pick.pick_best import (
     PickBest,
