@@ -13,7 +13,8 @@ class MockEncoderReturnsList:
         elif isinstance(to_encode, List):
             return [[1.0, 2.0] for _ in range(len(to_encode))]
         raise ValueError("Invalid input type for unit test")
-    
+
+
 def assert_vw_ex_equals(first, second):
     first = first.split("\n")
     second = second.split("\n")

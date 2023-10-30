@@ -249,6 +249,7 @@ def test_default_w_embeddings_on() -> None:
     vw_str = featurizer.format(picked_metadata)  # type: ignore
     assert_vw_ex_equals(vw_str, expected)
 
+
 # TODO: fix behavior and test
 # Right now expected value is: shared |User 0:1.0 1:2.0 |@ User=0:1.0 1:2.0 |User2 context2 |@ User2=context2
 # While returned one is:shared |User 0:1.0 1:2.0 |User2 context2 |@ User=0:1.0 1:2.0 User2=context2

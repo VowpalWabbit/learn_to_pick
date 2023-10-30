@@ -42,21 +42,20 @@ class PickBestEvent(base.Event[PickBestSelected]):
         self.to_select_from = to_select_from
         self.based_on = based_on
 
+
 class VwTxt:
     @staticmethod
     def embedding(embedding: List[float]) -> str:
         return " ".join([f"{i}:{e}" for i, e in enumerate(embedding)])
-    
+
     @staticmethod
     def features(features: Union[str, List[str]]) -> str:
         return " ".join(features) if isinstance(features, list) else features
-    
+
     @staticmethod
     def _namespaces(ns: Iterable[Tuple[str, Union[str, List[str]]]]):
-        return " ".join(
-            f'|{k} {VwTxt.features(v)}' for k, v in ns
-        )
-    
+        return " ".join(f"|{k} {VwTxt.features(v)}" for k, v in ns)
+
     @staticmethod
     def ns(ns: Union[Iterable[Tuple[str, Any]], List[Dict[str, Any]], Dict[str, Any]]):
         if isinstance(ns, List):
@@ -64,7 +63,7 @@ class VwTxt:
         if isinstance(ns, Dict):
             ns = ns.items()
         return VwTxt._namespaces(ns)
-        
+
 
 class PickBestFeaturizer(base.Featurizer[PickBestEvent]):
     """
@@ -169,25 +168,31 @@ class PickBestFeaturizer(base.Featurizer[PickBestEvent]):
         indexed_dot_product = self.get_indexed_dot_product(context_emb, action_embs)
 
         nactions = len(action_embs)
+
         def _tolist(v):
             return v if isinstance(v, list) else [v]
-        
-        labels = ['' for _ in range(nactions)]
+
+        labels = ["" for _ in range(nactions)]
         if cost is not None:
             labels[chosen_action] = f"{chosen_action}:{cost}:{prob} "
 
         dotprods = [{} for _ in range(nactions)]
         for i, action in enumerate(action_embs):
-            action['#'] = [f'{k}={v}' for k, _v in action.items() for v in _tolist(_v)]
-            dotprods[i] = [v[f] for v in indexed_dot_product.values() for f in action['#']]
+            action["#"] = [f"{k}={v}" for k, _v in action.items() for v in _tolist(_v)]
+            dotprods[i] = [
+                v[f] for v in indexed_dot_product.values() for f in action["#"]
+            ]
 
-        actions_str = [f'{l}{VwTxt.ns(a)} |dotprod {VwTxt.embedding(dp)}' for l, a, dp in zip(labels, action_embs, dotprods)]
+        actions_str = [
+            f"{l}{VwTxt.ns(a)} |dotprod {VwTxt.embedding(dp)}"
+            for l, a, dp in zip(labels, action_embs, dotprods)
+        ]
 
         for item in context_emb:
-            item['@'] = [f'{k}={v}' for k, _v in item.items() for v in _tolist(_v)]
-        shared_str = f'shared {VwTxt.ns(context_emb)}'
+            item["@"] = [f"{k}={v}" for k, _v in item.items() for v in _tolist(_v)]
+        shared_str = f"shared {VwTxt.ns(context_emb)}"
 
-        return '\n'.join([shared_str] + actions_str)
+        return "\n".join([shared_str] + actions_str)
 
     def format_auto_embed_off(self, event: PickBestEvent) -> str:
         """
@@ -199,11 +204,11 @@ class PickBestFeaturizer(base.Featurizer[PickBestEvent]):
 
         context_str = f"shared {VwTxt.ns(context_emb)}"
 
-        labels = ['' for _ in range(nactions)]
+        labels = ["" for _ in range(nactions)]
         if cost is not None:
             labels[chosen_action] = f"{chosen_action}:{cost}:{prob} "
-        actions_str = [f'{l}{VwTxt.ns(a)}' for a, l in zip(action_embs, labels)]
-        return '\n'.join([context_str] + actions_str)
+        actions_str = [f"{l}{VwTxt.ns(a)}" for a, l in zip(action_embs, labels)]
+        return "\n".join([context_str] + actions_str)
 
     def format(self, event: PickBestEvent) -> str:
         if self.auto_embed:

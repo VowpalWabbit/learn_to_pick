@@ -115,6 +115,7 @@ def get_based_on_and_to_select_from(inputs: Dict[str, Any]) -> Tuple[Dict, Dict]
 
     return based_on, to_select_from
 
+
 # Not used. Delete?
 def _prepare_inputs_for_autoembed(inputs: Dict[str, Any]) -> Dict[str, Any]:
     """
