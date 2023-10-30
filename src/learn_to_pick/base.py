@@ -115,22 +115,6 @@ def get_based_on_and_to_select_from(inputs: Dict[str, Any]) -> Tuple[Dict, Dict]
 
     return based_on, to_select_from
 
-
-# Not used. Delete?
-def _prepare_inputs_for_autoembed(inputs: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    go over all the inputs and if something is either wrapped in _ToSelectFrom or _BasedOn, and if their inner values are not already _Embed,
-    then wrap them in EmbedAndKeep while retaining their _ToSelectFrom or _BasedOn status
-    """
-
-    next_inputs = inputs.copy()
-    for k, v in next_inputs.items():
-        if isinstance(v, _ToSelectFrom) or isinstance(v, _BasedOn):
-            if not isinstance(v.value, _Embed):
-                next_inputs[k].value = EmbedAndKeep(v.value)
-    return next_inputs
-
-
 # end helper functions
 
 
@@ -488,14 +472,6 @@ class RLLoop(Generic[TEvent]):
 
         event.outputs = next_chain_inputs
         return {"picked": picked, "picked_metadata": event}
-
-
-# Not used. Delete?
-def _is_stringtype_instance(item: Any) -> bool:
-    """Helper function to check if an item is a string."""
-    return isinstance(item, str) or (
-        isinstance(item, _Embed) and isinstance(item.value, str)
-    )
 
 
 def _embed_string_type(
