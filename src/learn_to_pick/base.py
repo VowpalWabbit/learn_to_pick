@@ -282,6 +282,7 @@ class AutoSelectionScorer(SelectionScorer[Event]):
     def score_response(
         self, inputs: Dict[str, Any], picked: Any, event: Event
     ) -> float:
+        inputs.update({"picked": picked})
         p = AutoSelectionScorer.format_with_ignoring_extra_args(self.prompt, inputs)
         ranking = self.llm.predict(p)
         ranking = ranking.strip()
@@ -440,14 +441,14 @@ class RLLoop(Generic[TEvent]):
         if self.metrics:
             self.metrics.on_decision()
 
-        next_chain_inputs, picked, event = self._call_after_predict_before_scoring(
+        next_inputs, picked, event = self._call_after_predict_before_scoring(
             inputs=inputs, event=event, prediction=prediction
         )
 
         for callback_func in self.callbacks_before_scoring:
             try:
-                next_chain_inputs, event = callback_func(
-                    inputs=next_chain_inputs, picked=picked, event=event
+                next_inputs, event = callback_func(
+                    inputs=next_inputs, picked=picked, event=event
                 )
             except Exception as e:
                 logger.info(f"Callback function {callback_func} failed, error: {e}")
@@ -456,7 +457,7 @@ class RLLoop(Generic[TEvent]):
         try:
             if self._can_use_selection_scorer():
                 score = self.selection_scorer.score_response(
-                    inputs=next_chain_inputs, picked=picked, event=event
+                    inputs=next_inputs, picked=picked, event=event
                 )
         except Exception as e:
             logger.info(
@@ -471,7 +472,7 @@ class RLLoop(Generic[TEvent]):
         self.policy.learn(event=event)
         self.policy.log(event=event)
 
-        event.outputs = next_chain_inputs
+        event.outputs = next_inputs
         return {"picked": picked, "picked_metadata": event}
 
 
@@ -479,13 +480,17 @@ def _embed_string_type(
     item: Union[str, _Embed], model: Any, namespace: Optional[str] = None
 ) -> Dict[str, Union[str, List[str]]]:
     """Helper function to embed a string or an _Embed object."""
+    import re
     keep_str = ""
     if isinstance(item, _Embed):
         encoded = _stringify_embedding(model.encode(item.value))
+        # TODO these should be moved to pick_best
         if item.keep:
             keep_str = item.value.replace(" ", "_") + " "
+            keep_str = re.sub(r"[\t\n\r\f\v]+", " ", keep_str)
     elif isinstance(item, str):
         encoded = item.replace(" ", "_")
+        encoded = re.sub(r"[\t\n\r\f\v]+", " ", encoded)
     else:
         raise ValueError(f"Unsupported type {type(item)} for embedding")
 
