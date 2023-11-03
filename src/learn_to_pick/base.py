@@ -434,12 +434,12 @@ class RLLoop(Generic[TEvent]):
             raise ValueError(
                 "Either a dictionary positional argument or keyword arguments should be provided"
             )
-        
+
         if self.selected_based_on_input_key in inputs:
             raise ValueError(
                 f"The input key {self.selected_based_on_input_key} is reserved. Please use a different key."
             )
-    
+
         if self.selected_input_key in inputs:
             raise ValueError(
                 f"The input key {self.selected_input_key} is reserved. Please use a different key."
@@ -490,6 +490,7 @@ def _embed_string_type(
 ) -> Dict[str, Union[str, List[str]]]:
     """Helper function to embed a string or an _Embed object."""
     import re
+
     keep_str = ""
     if isinstance(item, _Embed):
         encoded = _stringify_embedding(model.encode(item.value))
