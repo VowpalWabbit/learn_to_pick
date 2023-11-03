@@ -259,9 +259,9 @@ class AutoSelectionScorer(SelectionScorer[Event]):
 
     @staticmethod
     def get_default_prompt() -> str:
-        human_template = """Given this based_on "{pick_best_selected_based_on}" \
+        human_template = """Given this based_on "{selected_based_on}" \
             as the most important attribute, rank how good or bad this text is: \
-                "{pick_best_selected}"."""
+                "{picked}"."""
         default_system_prompt = AutoSelectionScorer.get_default_system_prompt()
         return default_system_prompt + human_template
 
@@ -282,7 +282,6 @@ class AutoSelectionScorer(SelectionScorer[Event]):
     def score_response(
         self, inputs: Dict[str, Any], picked: Any, event: Event
     ) -> float:
-        inputs.update({"picked": picked})
         p = AutoSelectionScorer.format_with_ignoring_extra_args(self.prompt, inputs)
         ranking = self.llm.predict(p)
         ranking = ranking.strip()
@@ -326,8 +325,8 @@ class RLLoop(Generic[TEvent]):
     """
 
     # Define the default values as class attributes
-    selected_input_key = "pick_best_selected"
-    selected_based_on_input_key = "pick_best_selected_based_on"
+    selected_based_on_input_key = "selected_based_on"
+    selected_input_key = "picked"
 
     def __init__(
         self,
@@ -434,6 +433,16 @@ class RLLoop(Generic[TEvent]):
         else:
             raise ValueError(
                 "Either a dictionary positional argument or keyword arguments should be provided"
+            )
+        
+        if self.selected_based_on_input_key in inputs:
+            raise ValueError(
+                f"The input key {self.selected_based_on_input_key} is reserved. Please use a different key."
+            )
+    
+        if self.selected_input_key in inputs:
+            raise ValueError(
+                f"The input key {self.selected_input_key} is reserved. Please use a different key."
             )
 
         event: TEvent = self._call_before_predict(inputs=inputs)
