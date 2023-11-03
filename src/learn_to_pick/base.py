@@ -259,9 +259,9 @@ class AutoSelectionScorer(SelectionScorer[Event]):
 
     @staticmethod
     def get_default_prompt() -> str:
-        human_template = """Given this based_on "{pick_best_selected_based_on}" \
+        human_template = """Given this based_on "{selected_based_on}" \
             as the most important attribute, rank how good or bad this text is: \
-                "{pick_best_selected}"."""
+                "{picked}"."""
         default_system_prompt = AutoSelectionScorer.get_default_system_prompt()
         return default_system_prompt + human_template
 
@@ -325,8 +325,8 @@ class RLLoop(Generic[TEvent]):
     """
 
     # Define the default values as class attributes
-    selected_input_key = "pick_best_selected"
-    selected_based_on_input_key = "pick_best_selected_based_on"
+    selected_based_on_input_key = "selected_based_on"
+    selected_input_key = "picked"
 
     def __init__(
         self,
@@ -435,19 +435,29 @@ class RLLoop(Generic[TEvent]):
                 "Either a dictionary positional argument or keyword arguments should be provided"
             )
 
+        if self.selected_based_on_input_key in inputs:
+            raise ValueError(
+                f"The input key {self.selected_based_on_input_key} is reserved. Please use a different key."
+            )
+
+        if self.selected_input_key in inputs:
+            raise ValueError(
+                f"The input key {self.selected_input_key} is reserved. Please use a different key."
+            )
+
         event: TEvent = self._call_before_predict(inputs=inputs)
         prediction = self.policy.predict(event=event)
         if self.metrics:
             self.metrics.on_decision()
 
-        next_chain_inputs, picked, event = self._call_after_predict_before_scoring(
+        next_inputs, picked, event = self._call_after_predict_before_scoring(
             inputs=inputs, event=event, prediction=prediction
         )
 
         for callback_func in self.callbacks_before_scoring:
             try:
-                next_chain_inputs, event = callback_func(
-                    inputs=next_chain_inputs, picked=picked, event=event
+                next_inputs, event = callback_func(
+                    inputs=next_inputs, picked=picked, event=event
                 )
             except Exception as e:
                 logger.info(f"Callback function {callback_func} failed, error: {e}")
@@ -456,7 +466,7 @@ class RLLoop(Generic[TEvent]):
         try:
             if self._can_use_selection_scorer():
                 score = self.selection_scorer.score_response(
-                    inputs=next_chain_inputs, picked=picked, event=event
+                    inputs=next_inputs, picked=picked, event=event
                 )
         except Exception as e:
             logger.info(
@@ -471,7 +481,7 @@ class RLLoop(Generic[TEvent]):
         self.policy.learn(event=event)
         self.policy.log(event=event)
 
-        event.outputs = next_chain_inputs
+        event.outputs = next_inputs
         return {"picked": picked, "picked_metadata": event}
 
 
@@ -479,13 +489,18 @@ def _embed_string_type(
     item: Union[str, _Embed], model: Any, namespace: Optional[str] = None
 ) -> Dict[str, Union[str, List[str]]]:
     """Helper function to embed a string or an _Embed object."""
+    import re
+
     keep_str = ""
     if isinstance(item, _Embed):
         encoded = _stringify_embedding(model.encode(item.value))
+        # TODO these should be moved to pick_best
         if item.keep:
             keep_str = item.value.replace(" ", "_") + " "
+            keep_str = re.sub(r"[\t\n\r\f\v]+", " ", keep_str)
     elif isinstance(item, str):
         encoded = item.replace(" ", "_")
+        encoded = re.sub(r"[\t\n\r\f\v]+", " ", encoded)
     else:
         raise ValueError(f"Unsupported type {type(item)} for embedding")
 

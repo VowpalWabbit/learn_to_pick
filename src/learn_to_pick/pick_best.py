@@ -297,10 +297,7 @@ class PickBest(base.RLLoop[PickBestEvent]):
         selected = PickBestSelected(index=sampled_action, probability=sampled_prob)
         event.selected = selected
 
-        # only one key, value pair in event.to_select_from
-        key, value = next(iter(event.to_select_from.items()))
         next_inputs = inputs.copy()
-        next_inputs[key] = value[event.selected.index]
 
         # only one key, value pair in event.to_select_from
         value = next(iter(event.to_select_from.values()))
@@ -309,11 +306,13 @@ class PickBest(base.RLLoop[PickBestEvent]):
             if event.selected
             else event.to_select_from.values()
         )
-        next_inputs[self.selected_based_on_input_key] = str(event.based_on)
-        next_inputs[self.selected_input_key] = v
+
         picked = {}
         for k, v in event.to_select_from.items():
             picked[k] = v[event.selected.index]
+
+        next_inputs[self.selected_based_on_input_key] = str(event.based_on)
+        next_inputs[self.selected_input_key] = str(picked)
 
         return next_inputs, picked, event
 
