@@ -325,7 +325,7 @@ class PickBest(base.RLLoop[PickBestEvent]):
 
     @classmethod
     def create(
-        # cls: Type[PickBest],
+        cls: Type[PickBest],
         policy: Optional[base.Policy] = None,
         llm=None,
         selection_scorer: Union[base.AutoSelectionScorer, object] = SENTINEL,

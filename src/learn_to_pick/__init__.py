@@ -21,6 +21,13 @@ from learn_to_pick.pick_best import (
     PickBestSelected,
 )
 
+from learn_to_pick.byom.pytorch_policy import (
+    PyTorchPolicy
+)
+
+from learn_to_pick.byom.pytorch_feature_embedder import (
+    PyTorchFeatureEmbedder
+)
 
 def configure_logger() -> None:
     logger = logging.getLogger(__name__)
@@ -50,6 +57,8 @@ __all__ = [
     "Featurizer",
     "ModelRepository",
     "Policy",
+    "PyTorchPolicy",
+    "PyTorchFeatureEmbedder",
     "VwPolicy",
     "VwLogger",
     "embed",
