@@ -4,6 +4,7 @@ import logging
 from typing import Any, Dict, List, Optional, Tuple, Type, Union, Iterable
 from itertools import chain
 import os
+import numpy as np
 
 from learn_to_pick import base
 
@@ -41,27 +42,43 @@ class PickBestEvent(base.Event[PickBestSelected]):
         self.to_select_from = to_select_from
         self.based_on = based_on
 
+    def context(self, model) -> base.Featurized:
+        return base.embed(self.based_on or [], model)
+
+    def actions(self, model) -> List[base.Featurized]:
+        to_select_from_var_name, to_select_from = next(
+            iter(self.to_select_from.items()), (None, None)
+        )
+
+        action_embs = (
+            (
+                base.embed(to_select_from, model, to_select_from_var_name)
+                if self.to_select_from
+                else None
+            )
+            if to_select_from
+            else None
+        )
+        if not action_embs:
+            raise ValueError(
+                "Context and to_select_from must be provided in the inputs dictionary"
+            )
+        return action_embs
 
 class VwTxt:
     @staticmethod
-    def embedding(embedding: List[float]) -> str:
-        return " ".join([f"{i}:{e}" for i, e in enumerate(embedding)])
-
+    def _dense_2_str(values: base.DenseFeatures) -> str:
+        return " ".join([f"{i}:{e}" for i, e in enumerate(values)])
+    
     @staticmethod
-    def features(features: Union[str, List[str]]) -> str:
-        return " ".join(features) if isinstance(features, list) else features
-
+    def _sparse_2_str(values: base.SparseFeatures) -> str:
+        return " ".join([f"{k}:{v}" for k, v in values.items()])
+    
     @staticmethod
-    def _namespaces(ns: Iterable[Tuple[str, Union[str, List[str]]]]):
-        return " ".join(f"|{k} {VwTxt.features(v)}" for k, v in ns)
-
-    @staticmethod
-    def ns(ns: Union[Iterable[Tuple[str, Any]], List[Dict[str, Any]], Dict[str, Any]]):
-        if isinstance(ns, List):
-            ns = chain.from_iterable(map(dict.items, ns))
-        if isinstance(ns, Dict):
-            ns = ns.items()
-        return VwTxt._namespaces(ns)
+    def featurized_2_str(obj: base.Featurized) -> str:
+        return " ".join(chain.from_iterable([
+            map(lambda kv: f'|{kv[0]} {VwTxt._dense_2_str(kv[1])}', obj.dense.items()),
+            map(lambda kv: f'|{kv[0]} {VwTxt._sparse_2_str(kv[1])}', obj.sparse.items())]))    
 
 
 class PickBestFeaturizer(base.Featurizer[PickBestEvent]):
@@ -85,121 +102,47 @@ class PickBestFeaturizer(base.Featurizer[PickBestEvent]):
         self.model = model
         self.auto_embed = auto_embed
 
-    def _get_context_and_action_embeddings(self, event: PickBestEvent) -> tuple:
-        context_emb = base.embed(event.based_on, self.model) if event.based_on else None
-        to_select_from_var_name, to_select_from = next(
-            iter(event.to_select_from.items()), (None, None)
-        )
+    def _featurize_auto_embed_on(self, event: PickBestEvent) -> str:
+        context_emb = event.context(self.model)
+        action_embs = event.actions(self.model)
 
-        action_embs = (
-            (
-                base.embed(to_select_from, self.model, to_select_from_var_name)
-                if event.to_select_from
-                else None
-            )
-            if to_select_from
-            else None
-        )
-
-        if not context_emb or not action_embs:
-            raise ValueError(
-                "Context and to_select_from must be provided in the inputs dictionary"
-            )
-        return context_emb, action_embs
-
-    def _get_indexed_dot_product(self, context_emb: List, action_embs: List) -> Dict:
-        import numpy as np
-
-        unique_contexts = set()
-        for context_item in context_emb:
-            for ns, ee in context_item.items():
-                if isinstance(ee, list):
-                    for ea in ee:
-                        unique_contexts.add(f"{ns}={ea}")
-                else:
-                    unique_contexts.add(f"{ns}={ee}")
-
-        encoded_contexts = self.model.encode(list(unique_contexts))
-        context_embeddings = dict(zip(unique_contexts, encoded_contexts))
-
-        unique_actions = set()
-        for action in action_embs:
-            for ns, e in action.items():
-                if isinstance(e, list):
-                    for ea in e:
-                        unique_actions.add(f"{ns}={ea}")
-                else:
-                    unique_actions.add(f"{ns}={e}")
-
-        encoded_actions = self.model.encode(list(unique_actions))
-        action_embeddings = dict(zip(unique_actions, encoded_actions))
-
-        action_matrix = np.stack([v for k, v in action_embeddings.items()])
-        context_matrix = np.stack([v for k, v in context_embeddings.items()])
-        dot_product_matrix = np.dot(context_matrix, action_matrix.T)
-
-        indexed_dot_product: Dict = {}
-
-        for i, context_key in enumerate(context_embeddings.keys()):
-            indexed_dot_product[context_key] = {}
-            for j, action_key in enumerate(action_embeddings.keys()):
-                indexed_dot_product[context_key][action_key] = dot_product_matrix[i, j]
-
-        return indexed_dot_product
-
-    def _format_auto_embed_on(self, event: PickBestEvent) -> str:
-        context_emb, action_embs = self._get_context_and_action_embeddings(event)
-        indexed_dot_product = self._get_indexed_dot_product(context_emb, action_embs)
-
+        context_names = list(context_emb.dense.keys())
+        context_matrix = np.stack(list(context_emb.dense.values()))
+        for a in action_embs:
+            action_names = list(a.dense.keys())
+            product = np.dot(context_matrix, np.stack(list(a.dense.values()).T))
+            a['dotproduct'] = {f'{context_names[i]}_{action_names[j]}': product[i, j] for i in range(len(context_names)) for j in range(len(action_names))} 
+            
         nactions = len(action_embs)
-
-        def _tolist(v):
-            return v if isinstance(v, list) else [v]
-
+        context_str = f"shared {VwTxt.featurized_2_str(context_emb)}"
         selected = event.selected
         labels = ["" for _ in range(nactions)]
         if selected.score is not None:
             labels[selected.index] = f"{selected.index}:{-selected.score}:{selected.probability} "
-
-        dotprods = [{} for _ in range(nactions)]
-        for i, action in enumerate(action_embs):
-            action["#"] = [f"{k}={v}" for k, _v in action.items() for v in _tolist(_v)]
-            dotprods[i] = [
-                v[f] for v in indexed_dot_product.values() for f in action["#"]
-            ]
-
-        actions_str = [
-            f"{l}{VwTxt.ns(a)} |dotprod {VwTxt.embedding(dp)}"
-            for l, a, dp in zip(labels, action_embs, dotprods)
-        ]
-
-        for item in context_emb:
-            item["@"] = [f"{k}={v}" for k, _v in item.items() for v in _tolist(_v)]
-        shared_str = f"shared {VwTxt.ns(context_emb)}"
-
-        return "\n".join([shared_str] + actions_str)
-
-    def _format_auto_embed_off(self, event: PickBestEvent) -> str:
+        actions_str = [f"{l}{VwTxt.featurized_2_str(a)}" for a, l in zip(action_embs, labels)]
+        return "\n".join([context_str] + actions_str)
+    
+    def _featurize_auto_embed_off(self, event: PickBestEvent) -> str:
         """
         Converts the `BasedOn` and `ToSelectFrom` into a format that can be used by VW
         """
-        context_emb, action_embs = self.get_context_and_action_embeddings(event)
+        context_emb = event.context(self.model)
+        action_embs = event.actions(self.model)
+
         nactions = len(action_embs)
-
-        context_str = f"shared {VwTxt.ns(context_emb)}"
-
+        context_str = f"shared {VwTxt.featurized_2_str(context_emb)}"
         selected = event.selected
         labels = ["" for _ in range(nactions)]
         if selected.score is not None:
             labels[selected.index] = f"{selected.index}:{-selected.score}:{selected.probability} "
-        actions_str = [f"{l}{VwTxt.ns(a)}" for a, l in zip(action_embs, labels)]
+        actions_str = [f"{l}{VwTxt.featurized_2_str(a)}" for a, l in zip(action_embs, labels)]
         return "\n".join([context_str] + actions_str)
 
     def format(self, event: PickBestEvent) -> str:
         if self.auto_embed:
-            return self._format_auto_embed_on(event)
+            return self._featurize_auto_embed_on(event)
         else:
-            return self._format_auto_embed_off(event)
+            return self._featurize_auto_embed_off(event)
 
 
 class PickBestRandomPolicy(base.Policy[PickBestEvent]):

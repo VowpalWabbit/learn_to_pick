@@ -18,6 +18,8 @@ from typing import (
 from learn_to_pick.metrics import MetricsTrackerAverage, MetricsTrackerRollingWindow
 from learn_to_pick.model_repository import ModelRepository
 from learn_to_pick.vw_logger import VwLogger
+from learn_to_pick.features import Featurized, DenseFeatures, SparseFeatures
+import numpy as np
 
 if TYPE_CHECKING:
     import vowpal_wabbit_next as vw
@@ -108,7 +110,7 @@ def get_based_on_and_to_select_from(inputs: Dict[str, Any]) -> Tuple[Dict, Dict]
         )
 
     based_on = {
-        k: inputs[k].value if isinstance(inputs[k].value, list) else [inputs[k].value]
+        k: inputs[k].value if isinstance(inputs[k].value, list) else inputs[k].value
         for k in inputs.keys()
         if isinstance(inputs[k], _BasedOn)
     }
@@ -486,70 +488,57 @@ class RLLoop(Generic[TEvent]):
 
 
 def _embed_string_type(
-    item: Union[str, _Embed], model: Any, namespace: Optional[str] = None
-) -> Dict[str, Union[str, List[str]]]:
+    item: Union[str, _Embed], model: Any, namespace: str) -> Featurized:
     """Helper function to embed a string or an _Embed object."""
     import re
-
-    keep_str = ""
+    result = Featurized()
     if isinstance(item, _Embed):
-        encoded = _stringify_embedding(model.encode(item.value))
-        # TODO these should be moved to pick_best
+        result[namespace] = model.encode(item.value)
         if item.keep:
             keep_str = item.value.replace(" ", "_") + " "
-            keep_str = re.sub(r"[\t\n\r\f\v]+", " ", keep_str)
+            result[namespace] = {'raw': re.sub(r"[\t\n\r\f\v]+", " ", keep_str)}
     elif isinstance(item, str):
         encoded = item.replace(" ", "_")
-        encoded = re.sub(r"[\t\n\r\f\v]+", " ", encoded)
+        result[namespace] = {'raw': re.sub(r"[\t\n\r\f\v]+", " ", encoded)}
     else:
         raise ValueError(f"Unsupported type {type(item)} for embedding")
 
-    if namespace is None:
-        raise ValueError(
-            "The default namespace must be provided when embedding a string or _Embed object."
-        )
-
-    return {namespace: keep_str + encoded}
+    return result
 
 
-def _embed_dict_type(item: Dict, model: Any) -> Dict[str, Any]:
+def _embed_dict_type(item: Dict, model: Any) -> Featurized:
     """Helper function to embed a dictionary item."""
-    inner_dict: Dict = {}
+    result = Featurized()
     for ns, embed_item in item.items():
         if isinstance(embed_item, list):
-            inner_dict[ns] = []
-            for embed_list_item in embed_item:
-                embedded = _embed_string_type(embed_list_item, model, ns)
-                inner_dict[ns].append(embedded[ns])
+            for idx, embed_list_item in enumerate(embed_item):
+                result.merge(_embed_string_type(embed_list_item, model, f'{idx}_{ns}'))
         else:
-            inner_dict.update(_embed_string_type(embed_item, model, ns))
-    return inner_dict
+            result.merge(_embed_string_type(embed_item, model, ns))
+    return result
 
 
 def _embed_list_type(
     item: list, model: Any, namespace: Optional[str] = None
-) -> List[Dict[str, Union[str, List[str]]]]:
-    ret_list: List = []
+) -> List[Featurized]:
+    result = []
     for embed_item in item:
         if isinstance(embed_item, dict):
-            ret_list.append(_embed_dict_type(embed_item, model))
+            result.append(_embed_dict_type(embed_item, model))
         elif isinstance(embed_item, list):
-            item_embedding = _embed_list_type(embed_item, model, namespace)
-            # Get the first key from the first dictionary
-            first_key = next(iter(item_embedding[0]))
-            # Group the values under that key
-            grouping = {first_key: [item[first_key] for item in item_embedding]}
-            ret_list.append(grouping)
+            result.append(Featurized())
+            for idx, embed_list_item in enumerate(embed_item):
+                result[-1].merge(_embed_string_type(embed_list_item, model, f'{idx}'))
         else:
-            ret_list.append(_embed_string_type(embed_item, model, namespace))
-    return ret_list
+            result.append(_embed_string_type(embed_item, model, namespace))
+    return result
 
 
 def embed(
     to_embed: Union[Union[str, _Embed], Dict, List[Union[str, _Embed]], List[Dict]],
     model: Any,
     namespace: Optional[str] = None,
-) -> List[Dict[str, Union[str, List[str]]]]:
+) -> Union[Featurized, List[Featurized]]:
     """
     Embeds the actions or context using the SentenceTransformer model (or a model that has an `encode` function)
 
@@ -563,9 +552,9 @@ def embed(
     if (isinstance(to_embed, _Embed) and isinstance(to_embed.value, str)) or isinstance(
         to_embed, str
     ):
-        return [_embed_string_type(to_embed, model, namespace)]
+        return _embed_string_type(to_embed, model, namespace)
     elif isinstance(to_embed, dict):
-        return [_embed_dict_type(to_embed, model)]
+        return _embed_dict_type(to_embed, model)
     elif isinstance(to_embed, list):
         return _embed_list_type(to_embed, model, namespace)
     else:
