@@ -85,7 +85,7 @@ class PickBestFeaturizer(base.Featurizer[PickBestEvent]):
         self.model = model
         self.auto_embed = auto_embed
 
-    def get_context_and_action_embeddings(self, event: PickBestEvent) -> tuple:
+    def _get_context_and_action_embeddings(self, event: PickBestEvent) -> tuple:
         context_emb = base.embed(event.based_on, self.model) if event.based_on else None
         to_select_from_var_name, to_select_from = next(
             iter(event.to_select_from.items()), (None, None)
@@ -107,7 +107,7 @@ class PickBestFeaturizer(base.Featurizer[PickBestEvent]):
             )
         return context_emb, action_embs
 
-    def get_indexed_dot_product(self, context_emb: List, action_embs: List) -> Dict:
+    def _get_indexed_dot_product(self, context_emb: List, action_embs: List) -> Dict:
         import numpy as np
 
         unique_contexts = set()
@@ -147,9 +147,9 @@ class PickBestFeaturizer(base.Featurizer[PickBestEvent]):
 
         return indexed_dot_product
 
-    def format_auto_embed_on(self, event: PickBestEvent) -> str:
-        context_emb, action_embs = self.get_context_and_action_embeddings(event)
-        indexed_dot_product = self.get_indexed_dot_product(context_emb, action_embs)
+    def _format_auto_embed_on(self, event: PickBestEvent) -> str:
+        context_emb, action_embs = self._get_context_and_action_embeddings(event)
+        indexed_dot_product = self._get_indexed_dot_product(context_emb, action_embs)
 
         nactions = len(action_embs)
 
@@ -179,7 +179,7 @@ class PickBestFeaturizer(base.Featurizer[PickBestEvent]):
 
         return "\n".join([shared_str] + actions_str)
 
-    def format_auto_embed_off(self, event: PickBestEvent) -> str:
+    def _format_auto_embed_off(self, event: PickBestEvent) -> str:
         """
         Converts the `BasedOn` and `ToSelectFrom` into a format that can be used by VW
         """
@@ -197,9 +197,9 @@ class PickBestFeaturizer(base.Featurizer[PickBestEvent]):
 
     def format(self, event: PickBestEvent) -> str:
         if self.auto_embed:
-            return self.format_auto_embed_on(event)
+            return self._format_auto_embed_on(event)
         else:
-            return self.format_auto_embed_off(event)
+            return self._format_auto_embed_off(event)
 
 
 class PickBestRandomPolicy(base.Policy[PickBestEvent]):
