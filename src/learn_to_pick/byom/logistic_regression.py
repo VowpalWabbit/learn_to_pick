@@ -30,16 +30,17 @@ class Block(torch.nn.Module):
         return x + self.layer(x)
 
 class ResidualLogisticRegressor(torch.nn.Module):
-    def __init__(self, in_features, depth):
+    def __init__(self, in_features, depth, device):
         super().__init__()
         self._in_features = in_features
         self._depth = depth
         self.blocks = torch.nn.Sequential(*[ Block(in_features) for _ in range(depth) ])
         self.linear  = torch.nn.Linear(in_features=in_features, out_features=1)
         self.optim = parameterfree.COCOB(self.parameters())
+        self._device = device
 
     def clone(self):
-        other = ResidualLogisticRegressor(self._in_features, self._depth)
+        other = ResidualLogisticRegressor(self._in_features, self._depth, self._device)
         other.load_state_dict(self.state_dict())
         other.optim = parameterfree.COCOB(other.parameters())
         other.optim.load_state_dict(self.optim.state_dict())
@@ -52,9 +53,9 @@ class ResidualLogisticRegressor(torch.nn.Module):
         # X = batch x features
         # A = batch x actionbatch x actionfeatures
 
-        Xreshap = X.unsqueeze(1).expand(-1, A.shape[1], -1)                      # batch x actionbatch x features
-        XA = torch.cat((Xreshap, A), dim=-1).reshape(X.shape[0], A.shape[1], -1) # batch x actionbatch x (features + actionfeatures)
-        return self.linear(self.blocks(XA)).squeeze(2)                           # batch x actionbatch
+        Xreshap = X.unsqueeze(1).expand(-1, A.shape[1], -1)                                        # batch x actionbatch x features
+        XA = torch.cat((Xreshap, A), dim=-1).reshape(X.shape[0], A.shape[1], -1).to(self._device)  # batch x actionbatch x (features + actionfeatures)
+        return self.linear(self.blocks(XA)).squeeze(2)                                             # batch x actionbatch
 
     def predict(self, X, A):
         self.eval()
