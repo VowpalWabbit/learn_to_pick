@@ -29,7 +29,6 @@ class PickBestSelected(base.Selected):
         self.probability = probability
         self.score = score
 
-
 class PickBestEvent(base.Event[PickBestSelected]):
     def __init__(
         self,
@@ -38,7 +37,7 @@ class PickBestEvent(base.Event[PickBestSelected]):
         based_on: Dict[str, Any],
         selected: Optional[PickBestSelected] = None,
     ):
-        super().__init__(inputs=inputs, selected=selected)
+        super().__init__(inputs=inputs, selected=selected or PickBestSelected())
         self.to_select_from = to_select_from
         self.based_on = based_on
 
@@ -85,20 +84,6 @@ class PickBestFeaturizer(base.Featurizer[PickBestEvent]):
 
         self.model = model
         self.auto_embed = auto_embed
-
-    def get_label(self, event: PickBestEvent) -> tuple:
-        cost = None
-        if event.selected:
-            chosen_action = event.selected.index
-            cost = (
-                -1.0 * event.selected.score
-                if event.selected.score is not None
-                else None
-            )
-            prob = event.selected.probability
-            return chosen_action, cost, prob
-        else:
-            return None, None, None
 
     def get_context_and_action_embeddings(self, event: PickBestEvent) -> tuple:
         context_emb = base.embed(event.based_on, self.model) if event.based_on else None
@@ -163,7 +148,6 @@ class PickBestFeaturizer(base.Featurizer[PickBestEvent]):
         return indexed_dot_product
 
     def format_auto_embed_on(self, event: PickBestEvent) -> str:
-        chosen_action, cost, prob = self.get_label(event)
         context_emb, action_embs = self.get_context_and_action_embeddings(event)
         indexed_dot_product = self.get_indexed_dot_product(context_emb, action_embs)
 
@@ -172,9 +156,10 @@ class PickBestFeaturizer(base.Featurizer[PickBestEvent]):
         def _tolist(v):
             return v if isinstance(v, list) else [v]
 
+        selected = event.selected
         labels = ["" for _ in range(nactions)]
-        if cost is not None:
-            labels[chosen_action] = f"{chosen_action}:{cost}:{prob} "
+        if selected.score is not None:
+            labels[selected.index] = f"{selected.index}:{-selected.score}:{selected.probability} "
 
         dotprods = [{} for _ in range(nactions)]
         for i, action in enumerate(action_embs):
@@ -198,15 +183,15 @@ class PickBestFeaturizer(base.Featurizer[PickBestEvent]):
         """
         Converts the `BasedOn` and `ToSelectFrom` into a format that can be used by VW
         """
-        chosen_action, cost, prob = self.get_label(event)
         context_emb, action_embs = self.get_context_and_action_embeddings(event)
         nactions = len(action_embs)
 
         context_str = f"shared {VwTxt.ns(context_emb)}"
 
+        selected = event.selected
         labels = ["" for _ in range(nactions)]
-        if cost is not None:
-            labels[chosen_action] = f"{chosen_action}:{cost}:{prob} "
+        if selected.score is not None:
+            labels[selected.index] = f"{selected.index}:{-selected.score}:{selected.probability} "
         actions_str = [f"{l}{VwTxt.ns(a)}" for a, l in zip(action_embs, labels)]
         return "\n".join([context_str] + actions_str)
 
@@ -294,8 +279,7 @@ class PickBest(base.RLLoop[PickBestEvent]):
         sampled_ap = prediction[sampled_index]
         sampled_action = sampled_ap[0]
         sampled_prob = sampled_ap[1]
-        selected = PickBestSelected(index=sampled_action, probability=sampled_prob)
-        event.selected = selected
+        event.selected = PickBestSelected(index=sampled_action, probability=sampled_prob)
 
         next_inputs = inputs.copy()
 
