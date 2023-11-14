@@ -10,14 +10,15 @@ class PyTorchPolicy(base.Policy[PickBestEvent]):
         self,
         feature_embedder,
         depth: int = 2,
-        device: str = 'cuda' if torch.cuda.is_available() else 'cpu',
+        device: str = "cuda" if torch.cuda.is_available() else "cpu",
         *args,
         **kwargs,
     ):
         print(f"Device: {device}")
         super().__init__(*args, **kwargs)
         self.workspace = ResidualLogisticRegressor(
-            feature_embedder.model.get_sentence_embedding_dimension() * 2, depth, device).to(device)
+            feature_embedder.model.get_sentence_embedding_dimension() * 2, depth, device
+        ).to(device)
         self.feature_embedder = feature_embedder
         self.device = device
         self.index = 0
@@ -34,6 +35,7 @@ class PyTorchPolicy(base.Policy[PickBestEvent]):
         p = self.workspace.predict(X, A)
         # print(f"p: {p}")
         import math
+
         explore = SamplingIGW(A, p, math.sqrt(self.index))
         self.index += 1
         # print(f"explore: {explore}")
@@ -58,18 +60,17 @@ class PyTorchPolicy(base.Policy[PickBestEvent]):
 
     def save(self, path) -> None:
         state = {
-            'workspace_state_dict': self.workspace.state_dict(),
-            'optimizer_state_dict': self.workspace.optim.state_dict(),
-            'device': self.device,
-            'index': self.index,
-            'loss': self.loss
+            "workspace_state_dict": self.workspace.state_dict(),
+            "optimizer_state_dict": self.workspace.optim.state_dict(),
+            "device": self.device,
+            "index": self.index,
+            "loss": self.loss,
         }
         print(f"Saving model to {path}")
         dir, _ = os.path.split(path)
         if dir and not os.path.exists(dir):
             os.makedirs(dir, exist_ok=True)
         torch.save(state, path)
-
 
     def load(self, path) -> None:
         import parameterfree
@@ -78,10 +79,10 @@ class PyTorchPolicy(base.Policy[PickBestEvent]):
             print(f"Loading model from {path}")
             checkpoint = torch.load(path, map_location=self.device)
 
-            self.workspace.load_state_dict(checkpoint['workspace_state_dict'])
+            self.workspace.load_state_dict(checkpoint["workspace_state_dict"])
             self.workspace.optim = parameterfree.COCOB(self.workspace.parameters())
-            self.workspace.optim.load_state_dict(checkpoint['optimizer_state_dict'])
-            self.device = checkpoint['device']
+            self.workspace.optim.load_state_dict(checkpoint["optimizer_state_dict"])
+            self.device = checkpoint["device"]
             self.workspace.to(self.device)
-            self.index = checkpoint['index']
-            self.loss = checkpoint['loss']
+            self.index = checkpoint["index"]
+            self.loss = checkpoint["loss"]

@@ -2,12 +2,11 @@ import learn_to_pick as rl_chain
 from sentence_transformers import SentenceTransformer
 import torch
 
-class PyTorchFeatureEmbedder(): #rl_chain.Embedder[rl_chain.PickBestEvent]
-    def __init__(
-        self, auto_embed, model = None, *args, **kwargs
-    ):
+
+class PyTorchFeatureEmbedder:
+    def __init__(self, auto_embed, model=None, *args, **kwargs):
         if model is None:
-            model = model = SentenceTransformer('all-MiniLM-L6-v2')
+            model = model = SentenceTransformer("all-MiniLM-L6-v2")
 
         self.model = model
         self.auto_embed = auto_embed
@@ -84,4 +83,8 @@ class PyTorchFeatureEmbedder(): #rl_chain.Embedder[rl_chain.PickBestEvent]
         if cost is None:
             return context, actions
         else:
-            return torch.Tensor([[-1.0 * cost]]), context, actions[:,chosen_action,:].unsqueeze(1)
+            return (
+                torch.Tensor([[-1.0 * cost]]),
+                context,
+                actions[:, chosen_action, :].unsqueeze(1),
+            )

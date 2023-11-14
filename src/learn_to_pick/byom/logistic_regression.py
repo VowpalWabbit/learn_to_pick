@@ -2,16 +2,27 @@ import parameterfree
 import torch
 import torch.nn.functional as F
 
+
 class MLP(torch.nn.Module):
     @staticmethod
     def new_gelu(x):
         import math
-        return 0.5 * x * (1.0 + torch.tanh(math.sqrt(2.0 / math.pi) * (x + 0.044715 * torch.pow(x, 3.0))))
+
+        return (
+            0.5
+            * x
+            * (
+                1.0
+                + torch.tanh(
+                    math.sqrt(2.0 / math.pi) * (x + 0.044715 * torch.pow(x, 3.0))
+                )
+            )
+        )
 
     def __init__(self, dim):
         super().__init__()
-        self.c_fc    = torch.nn.Linear(dim, 4 * dim)
-        self.c_proj  = torch.nn.Linear(4 * dim, dim)
+        self.c_fc = torch.nn.Linear(dim, 4 * dim)
+        self.c_proj = torch.nn.Linear(4 * dim, dim)
         self.dropout = torch.nn.Dropout(0.5)
 
     def forward(self, x):
@@ -21,6 +32,7 @@ class MLP(torch.nn.Module):
         x = self.dropout(x)
         return x
 
+
 class Block(torch.nn.Module):
     def __init__(self, dim):
         super().__init__()
@@ -29,13 +41,14 @@ class Block(torch.nn.Module):
     def forward(self, x):
         return x + self.layer(x)
 
+
 class ResidualLogisticRegressor(torch.nn.Module):
     def __init__(self, in_features, depth, device):
         super().__init__()
         self._in_features = in_features
         self._depth = depth
-        self.blocks = torch.nn.Sequential(*[ Block(in_features) for _ in range(depth) ])
-        self.linear  = torch.nn.Linear(in_features=in_features, out_features=1)
+        self.blocks = torch.nn.Sequential(*[Block(in_features) for _ in range(depth)])
+        self.linear = torch.nn.Linear(in_features=in_features, out_features=1)
         self.optim = parameterfree.COCOB(self.parameters())
         self._device = device
 
@@ -53,9 +66,15 @@ class ResidualLogisticRegressor(torch.nn.Module):
         # X = batch x features
         # A = batch x actionbatch x actionfeatures
 
-        Xreshap = X.unsqueeze(1).expand(-1, A.shape[1], -1)                                        # batch x actionbatch x features
-        XA = torch.cat((Xreshap, A), dim=-1).reshape(X.shape[0], A.shape[1], -1).to(self._device)  # batch x actionbatch x (features + actionfeatures)
-        return self.linear(self.blocks(XA)).squeeze(2)                                             # batch x actionbatch
+        Xreshap = X.unsqueeze(1).expand(
+            -1, A.shape[1], -1
+        )  # batch x actionbatch x features
+        XA = (
+            torch.cat((Xreshap, A), dim=-1)
+            .reshape(X.shape[0], A.shape[1], -1)
+            .to(self._device)
+        )  # batch x actionbatch x (features + actionfeatures)
+        return self.linear(self.blocks(XA)).squeeze(2)  # batch x actionbatch
 
     def predict(self, X, A):
         self.eval()

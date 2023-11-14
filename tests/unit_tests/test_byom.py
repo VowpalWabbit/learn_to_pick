@@ -7,7 +7,8 @@ import shutil
 import learn_to_pick
 
 
-CHECKPOINT_DIR = 'test_models'
+CHECKPOINT_DIR = "test_models"
+
 
 @pytest.fixture
 def remove_checkpoint():
@@ -15,17 +16,12 @@ def remove_checkpoint():
     if os.path.isdir(CHECKPOINT_DIR):
         shutil.rmtree(CHECKPOINT_DIR)
 
+
 class CustomSelectionScorer(learn_to_pick.SelectionScorer):
     def get_score(self, user, time_of_day, article):
         preferences = {
-            'Tom': {
-                'morning': 'politics',
-                'afternoon': 'music'
-            },
-            'Anna': {
-                'morning': 'sports',
-                'afternoon': 'politics'
-            }
+            "Tom": {"morning": "politics", "afternoon": "music"},
+            "Anna": {"morning": "sports", "afternoon": "politics"},
         }
 
         return int(preferences[user][time_of_day] == article)
@@ -58,16 +54,19 @@ class Simulator:
             user = self._choose_user()
             time_of_day = self._choose_time_of_day()
             pytorch_picker.run(
-                article = learn_to_pick.ToSelectFrom(self.articles),
-                user = learn_to_pick.BasedOn(user),
-                time_of_day = learn_to_pick.BasedOn(time_of_day),
+                article=learn_to_pick.ToSelectFrom(self.articles),
+                user=learn_to_pick.BasedOn(user),
+                time_of_day=learn_to_pick.BasedOn(time_of_day),
             )
+
 
 def verify_same_models(model1, model2):
     for p1, p2 in zip(model1.parameters(), model2.parameters()):
         assert torch.equal(p1, p2), "The models' parameters are not equal."
 
-    for (name1, buffer1), (name2, buffer2) in zip(model1.named_buffers(), model2.named_buffers()):
+    for (name1, buffer1), (name2, buffer2) in zip(
+        model1.named_buffers(), model2.named_buffers()
+    ):
         assert name1 == name2, "Buffer names do not match."
         assert torch.equal(buffer1, buffer2), f"The buffers {name1} are not equal."
 
@@ -86,7 +85,7 @@ def verify_same_optimizers(optimizer1, optimizer2):
         return False
 
     for key in state_dict1:
-        if key == 'state':
+        if key == "state":
             if state_dict1[key].keys() != state_dict2[key].keys():
                 return False
             for subkey in state_dict1[key]:
@@ -104,7 +103,7 @@ def test_save_load(remove_checkpoint):
     sim2 = Simulator()
 
     fe = learn_to_pick.PyTorchFeatureEmbedder(auto_embed=True)
-    first_model_path = f'{CHECKPOINT_DIR}/first.checkpoint'
+    first_model_path = f"{CHECKPOINT_DIR}/first.checkpoint"
 
     torch.manual_seed(0)
     first_byom = learn_to_pick.PyTorchPolicy(feature_embedder=fe)
@@ -112,18 +111,24 @@ def test_save_load(remove_checkpoint):
 
     torch.manual_seed(0)
 
-    first_picker = learn_to_pick.PickBest.create(policy=first_byom, selection_scorer=CustomSelectionScorer())
+    first_picker = learn_to_pick.PickBest.create(
+        policy=first_byom, selection_scorer=CustomSelectionScorer()
+    )
     sim1.run(first_picker, 5)
     first_byom.save(first_model_path)
 
     second_byom.load(first_model_path)
-    second_picker = learn_to_pick.PickBest.create(policy=second_byom, selection_scorer=CustomSelectionScorer())
+    second_picker = learn_to_pick.PickBest.create(
+        policy=second_byom, selection_scorer=CustomSelectionScorer()
+    )
     sim1.run(second_picker, 5)
 
     torch.manual_seed(0)
     all_byom = learn_to_pick.PyTorchPolicy(feature_embedder=fe)
     torch.manual_seed(0)
-    all_picker = learn_to_pick.PickBest.create(policy=all_byom, selection_scorer=CustomSelectionScorer())
+    all_picker = learn_to_pick.PickBest.create(
+        policy=all_byom, selection_scorer=CustomSelectionScorer()
+    )
     sim2.run(all_picker, 10)
 
     verify_same_models(second_byom.workspace, all_byom.workspace)
