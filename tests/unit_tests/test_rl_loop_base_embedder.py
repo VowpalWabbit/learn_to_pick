@@ -362,9 +362,18 @@ def test_action_w_namespace_w_emb_w_more_than_one_item_in_first_dict() -> None:
         assert featurized[i].dense == expected_dense[i]
 
     expected_sparse = [
-        {"test_namespace": {"default_ft": str1}, "test_namespace2": {"default_ft": str1}},
-        {"test_namespace": {"default_ft": str2}, "test_namespace2": {"default_ft": str2}},
-        {"test_namespace": {"default_ft": str3}, "test_namespace2": {"default_ft": str3}},
+        {
+            "test_namespace": {"default_ft": str1},
+            "test_namespace2": {"default_ft": str1},
+        },
+        {
+            "test_namespace": {"default_ft": str2},
+            "test_namespace2": {"default_ft": str2},
+        },
+        {
+            "test_namespace": {"default_ft": str3},
+            "test_namespace2": {"default_ft": str3},
+        },
     ]
     featurized = base.embed(
         [
