@@ -5,6 +5,7 @@ from test_utils import MockEncoder, MockEncoderReturnsList, assert_vw_ex_equals
 
 import learn_to_pick
 import learn_to_pick.base as rl_loop
+from learn_to_pick.pick_best import vw_cb_formatter
 
 encoded_keyword = "[encoded]"
 
@@ -179,7 +180,7 @@ def test_everything_embedded() -> None:
         action=rl_loop.EmbedAndKeep(learn_to_pick.ToSelectFrom(actions)),
     )
     picked_metadata = response["picked_metadata"]  # type: ignore
-    vw_str = featurizer.format(picked_metadata)  # type: ignore
+    vw_str = vw_cb_formatter(*featurizer.featurize(picked_metadata))  # type: ignore
     assert_vw_ex_equals(vw_str, expected)
 
 
@@ -205,7 +206,7 @@ def test_default_auto_embedder_is_off() -> None:
         action=learn_to_pick.base.ToSelectFrom(actions),
     )
     picked_metadata = response["picked_metadata"]  # type: ignore
-    vw_str = featurizer.format(picked_metadata)  # type: ignore
+    vw_str = vw_cb_formatter(*featurizer.featurize(picked_metadata))  # type: ignore
     assert_vw_ex_equals(vw_str, expected)
 
 
@@ -231,7 +232,7 @@ def test_default_w_embeddings_off() -> None:
         action=learn_to_pick.ToSelectFrom(actions),
     )
     picked_metadata = response["picked_metadata"]  # type: ignore
-    vw_str = featurizer.format(picked_metadata)  # type: ignore
+    vw_str = vw_cb_formatter(*featurizer.featurize(picked_metadata))  # type: ignore
     assert_vw_ex_equals(vw_str, expected)
 
 
@@ -258,7 +259,7 @@ def test_default_w_embeddings_on() -> None:
         action=learn_to_pick.ToSelectFrom(actions),
     )
     picked_metadata = response["picked_metadata"]  # type: ignore
-    vw_str = featurizer.format(picked_metadata)  # type: ignore
+    vw_str = vw_cb_formatter(*featurizer.featurize(picked_metadata))  # type: ignore
     assert_vw_ex_equals(vw_str, expected)
 
 

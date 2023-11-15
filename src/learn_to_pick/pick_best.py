@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional, Tuple, Type, Union, Iterable
+from typing import Any, Dict, List, Optional, Tuple, Type, Union, Callable
 from itertools import chain
 import os
 import numpy as np
@@ -82,7 +82,7 @@ class VwTxt:
     def featurized_2_str(obj: base.Featurized) -> str:
         return " ".join(chain.from_iterable([
             map(lambda kv: f'|{kv[0]}_dense {VwTxt._dense_2_str(kv[1])}', obj.dense.items()),
-            map(lambda kv: f'|{kv[0]}_sparse {VwTxt._sparse_2_str(kv[1])}', obj.sparse.items())]))    
+            map(lambda kv: f'|{kv[0]}_sparse {VwTxt._sparse_2_str(kv[1])}', obj.sparse.items())]))
 
 
 class PickBestFeaturizer(base.Featurizer[PickBestEvent]):
@@ -137,22 +137,25 @@ class PickBestFeaturizer(base.Featurizer[PickBestEvent]):
         for a in actions:
             a['#'] = self._generic_namespace(a)
 
-    def format(self, event: PickBestEvent) -> str:
-        context_emb = event.context(self.model)
-        action_embs = event.actions(self.model)
+    def featurize(self, event: PickBestEvent) -> Tuple[base.Featurized, List[base.Featurized], PickBestSelected]:
+        context = event.context(self.model)
+        actions = event.actions(self.model)
 
         if self.auto_embed:
-            self._dotproducts(context_emb, action_embs)
-            self._generic_namespaces(context_emb, action_embs)
+            self._dotproducts(context, actions)
+            self._generic_namespaces(context, actions)
         
-        nactions = len(action_embs)
-        context_str = f"shared {VwTxt.featurized_2_str(context_emb)}"
-        selected = event.selected
-        labels = ["" for _ in range(nactions)]
-        if selected.score is not None:
-            labels[selected.index] = f"{selected.index}:{-selected.score}:{selected.probability} "
-        actions_str = [f"{l}{VwTxt.featurized_2_str(a)}" for a, l in zip(action_embs, labels)]
-        return "\n".join([context_str] + actions_str)
+        return context, actions, event.selected
+
+
+def vw_cb_formatter(context: base.Featurized, actions: List[base.Featurized], selected: PickBestSelected) -> str:
+    nactions = len(actions)
+    context_str = f"shared {VwTxt.featurized_2_str(context)}"
+    labels = ["" for _ in range(nactions)]
+    if selected.score is not None:
+        labels[selected.index] = f"{selected.index}:{-selected.score}:{selected.probability} "
+    actions_str = [f"{l}{VwTxt.featurized_2_str(a)}" for a, l in zip(actions, labels)]
+    return "\n".join([context_str] + actions_str)
     
 
 class PickBestRandomPolicy(base.Policy[PickBestEvent]):
@@ -300,13 +303,14 @@ class PickBest(base.RLLoop[PickBestEvent]):
     @staticmethod
     def create_policy(
         featurizer: Optional[base.Featurizer] = None,
+        formatter: Optional[Callable] = None,
         vw_cmd: Optional[List[str]] = None,
         model_save_dir: str = "./",
         reset_model: bool = False,
         rl_logs: Optional[Union[str, os.PathLike]] = None,
     ):
-        if not featurizer:
-            featurizer = PickBestFeaturizer(auto_embed=False)
+        featurizer = featurizer or PickBestFeaturizer(auto_embed=False)
+        formatter = formatter or vw_cb_formatter
 
         vw_cmd = vw_cmd or []
         interactions = []
@@ -334,6 +338,7 @@ class PickBest(base.RLLoop[PickBestEvent]):
             ),
             vw_cmd=vw_cmd,
             featurizer=featurizer,
+            formatter=formatter,
             vw_logger=base.VwLogger(rl_logs),
         )
 

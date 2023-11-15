@@ -13,13 +13,13 @@ from typing import (
     Type,
     TypeVar,
     Union,
+    Callable
 )
 
 from learn_to_pick.metrics import MetricsTrackerAverage, MetricsTrackerRollingWindow
 from learn_to_pick.model_repository import ModelRepository
 from learn_to_pick.vw_logger import VwLogger
 from learn_to_pick.features import Featurized, DenseFeatures, SparseFeatures
-import numpy as np
 
 if TYPE_CHECKING:
     import vowpal_wabbit_next as vw
@@ -163,6 +163,7 @@ class VwPolicy(Policy):
         model_repo: ModelRepository,
         vw_cmd: List[str],
         featurizer: Featurizer,
+        formatter: Callable,
         vw_logger: VwLogger,
         *args: Any,
         **kwargs: Any,
@@ -172,27 +173,31 @@ class VwPolicy(Policy):
         self.vw_cmd = vw_cmd
         self.workspace = self.model_repo.load(vw_cmd)
         self.featurizer = featurizer
+        self.formatter = formatter
         self.vw_logger = vw_logger
+
+    def format(self, event):
+        return self.formatter(*self.featurizer.featurize(event))
 
     def predict(self, event: TEvent) -> Any:
         import vowpal_wabbit_next as vw
 
         text_parser = vw.TextFormatParser(self.workspace)
         return self.workspace.predict_one(
-            _parse_lines(text_parser, self.featurizer.format(event))
+            _parse_lines(text_parser, self.format(event))
         )
 
     def learn(self, event: TEvent) -> None:
         import vowpal_wabbit_next as vw
 
-        vw_ex = self.featurizer.format(event)
+        vw_ex = self.format(event)
         text_parser = vw.TextFormatParser(self.workspace)
         multi_ex = _parse_lines(text_parser, vw_ex)
         self.workspace.learn_one(multi_ex)
 
     def log(self, event: TEvent) -> None:
         if self.vw_logger.logging_enabled():
-            vw_ex = self.featurizer.format(event)
+            vw_ex = self.format(event)
             self.vw_logger.log(vw_ex)
 
     def save(self) -> None:
@@ -204,7 +209,7 @@ class Featurizer(Generic[TEvent], ABC):
         pass
 
     @abstractmethod
-    def format(self, event: TEvent) -> Any:
+    def featurize(self, event: TEvent) -> Any:
         ...
 
 
