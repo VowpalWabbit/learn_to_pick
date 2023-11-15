@@ -165,10 +165,9 @@ class VwPolicy(Policy):
         featurizer: Featurizer,
         formatter: Callable,
         vw_logger: VwLogger,
-        *args: Any,
         **kwargs: Any,
     ):
-        super().__init__(*args, **kwargs)
+        super().__init__(**kwargs)
         self.model_repo = model_repo
         self.vw_cmd = vw_cmd
         self.workspace = self.model_repo.load(vw_cmd)
