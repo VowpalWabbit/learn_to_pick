@@ -89,10 +89,6 @@ def EmbedAndKeep(anything: Any) -> Any:
 # helper functions
 
 
-def _stringify_embedding(embedding: List) -> str:
-    return " ".join([f"{i}:{e}" for i, e in enumerate(embedding)])
-
-
 def _parse_lines(parser: "vw.TextFormatParser", input_str: str) -> List["vw.Example"]:
     return [parser.parse_line(line) for line in input_str.split("\n")]
 
@@ -493,9 +489,9 @@ def _embed_string_type(
     import re
     result = Featurized()
     if isinstance(item, _Embed):
-        result[namespace] = model.encode(item.value)
+        result[namespace] = DenseFeatures(model.encode(item.value))
         if item.keep:
-            keep_str = item.value.replace(" ", "_") + " "
+            keep_str = item.value.replace(" ", "_")
             result[namespace] = {'raw': re.sub(r"[\t\n\r\f\v]+", " ", keep_str)}
     elif isinstance(item, str):
         encoded = item.replace(" ", "_")
@@ -512,7 +508,7 @@ def _embed_dict_type(item: Dict, model: Any) -> Featurized:
     for ns, embed_item in item.items():
         if isinstance(embed_item, list):
             for idx, embed_list_item in enumerate(embed_item):
-                result.merge(_embed_string_type(embed_list_item, model, f'{idx}_{ns}'))
+                result.merge(_embed_string_type(embed_list_item, model, f'{ns}_{idx}'))
         else:
             result.merge(_embed_string_type(embed_item, model, ns))
     return result

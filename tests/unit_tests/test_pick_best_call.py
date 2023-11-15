@@ -161,15 +161,16 @@ def test_everything_embedded() -> None:
     str1 = "0"
     str2 = "1"
     str3 = "2"
-    encoded_str1 = rl_loop._stringify_embedding(list(encoded_keyword + str1))
-    encoded_str2 = rl_loop._stringify_embedding(list(encoded_keyword + str2))
-    encoded_str3 = rl_loop._stringify_embedding(list(encoded_keyword + str3))
-
+    action_dense = "0:1.0 1:0.0"
+    
     ctx_str_1 = "context1"
+    encoded_ctx_str_1 = "0:8.0 1:0.0"
 
-    encoded_ctx_str_1 = rl_loop._stringify_embedding(list(encoded_keyword + ctx_str_1))
-
-    expected = f"""shared |User {ctx_str_1 + " " + encoded_ctx_str_1} \n|action {str1 + " " + encoded_str1} \n|action {str2 + " " + encoded_str2} \n|action {str3 + " " + encoded_str3} """  # noqa
+    expected = "\n".join([
+        f"shared |User_dense {encoded_ctx_str_1} |User_sparse raw:={ctx_str_1}",
+        f"|action_dense {action_dense} |action_sparse raw:={str1}",
+        f"|action_dense {action_dense} |action_sparse raw:={str2}",
+        f"|action_dense {action_dense} |action_sparse raw:={str3}"])  # noqa
 
     actions = [str1, str2, str3]
 
@@ -191,7 +192,11 @@ def test_default_auto_embedder_is_off() -> None:
     str3 = "2"
     ctx_str_1 = "context1"
 
-    expected = f"""shared |User {ctx_str_1} \n|action {str1} \n|action {str2} \n|action {str3} """  # noqa
+    expected = "\n".join([
+        f"shared |User_sparse raw:={ctx_str_1}",
+        f"|action_sparse raw:={str1}",
+        f"|action_sparse raw:={str2}",
+        f"|action_sparse raw:={str3}"])  # noqa
 
     actions = [str1, str2, str3]
 
@@ -213,7 +218,11 @@ def test_default_w_embeddings_off() -> None:
     str3 = "2"
     ctx_str_1 = "context1"
 
-    expected = f"""shared |User {ctx_str_1} \n|action {str1} \n|action {str2} \n|action {str3} """  # noqa
+    expected = "\n".join([
+        f"shared |User_sparse raw:={ctx_str_1}",
+        f"|action_sparse raw:={str1}",
+        f"|action_sparse raw:={str2}",
+        f"|action_sparse raw:={str3}"])  # noqa
 
     actions = [str1, str2, str3]
 
@@ -235,9 +244,12 @@ def test_default_w_embeddings_on() -> None:
     str1 = "0"
     str2 = "1"
     ctx_str_1 = "context1"
-    dot_prod = "dotprod 0:5.0"  # dot prod of [1.0, 2.0] and [1.0, 2.0]
+    dot_prod = "dotprod_sparse User_action:5.0"  # dot prod of [1.0, 2.0] and [1.0, 2.0]
 
-    expected = f"""shared |User {ctx_str_1} |@ User={ctx_str_1}\n|action {str1} |# action={str1} |{dot_prod}\n|action {str2} |# action={str2} |{dot_prod}"""  # noqa
+    expected = "\n".join([
+        f"shared |User_sparse raw:={ctx_str_1} |@_sparse User:={ctx_str_1}",
+        f"|action_sparse raw:={str1} |{dot_prod} |#_sparse action:={str1} ",
+        f"|action_sparse raw:={str2} |{dot_prod} |#_sparse action:={str2} "])  # noqa
 
     actions = [str1, str2]
 

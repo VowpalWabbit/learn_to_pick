@@ -43,7 +43,7 @@ class PickBestEvent(base.Event[PickBestSelected]):
         self.based_on = based_on
 
     def context(self, model) -> base.Featurized:
-        return base.embed(self.based_on or [], model)
+        return base.embed(self.based_on or {}, model)
 
     def actions(self, model) -> List[base.Featurized]:
         to_select_from_var_name, to_select_from = next(
@@ -69,16 +69,20 @@ class VwTxt:
     @staticmethod
     def _dense_2_str(values: base.DenseFeatures) -> str:
         return " ".join([f"{i}:{e}" for i, e in enumerate(values)])
-    
+
     @staticmethod
     def _sparse_2_str(values: base.SparseFeatures) -> str:
-        return " ".join([f"{k}:{v}" for k, v in values.items()])
+        def _to_str(v):
+            import numbers
+            return v if isinstance(v, numbers.Number) else f'={v}'
+
+        return " ".join([f"{k}:{_to_str(v)}" for k, v in values.items()])
     
     @staticmethod
     def featurized_2_str(obj: base.Featurized) -> str:
         return " ".join(chain.from_iterable([
-            map(lambda kv: f'|{kv[0]} {VwTxt._dense_2_str(kv[1])}', obj.dense.items()),
-            map(lambda kv: f'|{kv[0]} {VwTxt._sparse_2_str(kv[1])}', obj.sparse.items())]))    
+            map(lambda kv: f'|{kv[0]}_dense {VwTxt._dense_2_str(kv[1])}', obj.dense.items()),
+            map(lambda kv: f'|{kv[0]}_sparse {VwTxt._sparse_2_str(kv[1])}', obj.sparse.items())]))    
 
 
 class PickBestFeaturizer(base.Featurizer[PickBestEvent]):
@@ -102,17 +106,45 @@ class PickBestFeaturizer(base.Featurizer[PickBestEvent]):
         self.model = model
         self.auto_embed = auto_embed
 
-    def _featurize_auto_embed_on(self, event: PickBestEvent) -> str:
+    def _dotproducts(self, context, actions):
+        _context_dense = base.Featurized()
+        for ns in context.sparse.keys():
+            if 'raw' in context.sparse[ns]:
+                _context_dense[ns] = self.model.encode(context.sparse[ns]['raw'])
+
+        _actions_dense = [base.Featurized() for _ in range(len(actions))]
+        for _action, action in zip(_actions_dense, actions):
+            for ns in action.sparse.keys():
+                if 'raw' in action.sparse[ns]:
+                    _action[ns] = self.model.encode(action.sparse[ns]['raw'])
+
+        context_names = list(_context_dense.dense.keys())
+        context_matrix = np.stack(list(_context_dense.dense.values()))
+        for _a, a in zip(_actions_dense, actions):
+            action_names = list(_a.dense.keys())
+            product = np.dot(context_matrix, np.stack(list(_a.dense.values())).T)
+            a['dotprod'] = {f'{context_names[i]}_{action_names[j]}': product[i, j] for i in range(len(context_names)) for j in range(len(action_names))} 
+
+    def _generic_namespace(self, featurized):
+        result = base.SparseFeatures()
+        for ns in featurized.sparse.keys():
+            if 'raw' in featurized.sparse[ns]:
+                result[ns] = featurized.sparse[ns]['raw']
+        return result
+
+    def _generic_namespaces(self, context, actions):
+        context['@'] = self._generic_namespace(context)
+        for a in actions:
+            a['#'] = self._generic_namespace(a)
+
+    def format(self, event: PickBestEvent) -> str:
         context_emb = event.context(self.model)
         action_embs = event.actions(self.model)
 
-        context_names = list(context_emb.dense.keys())
-        context_matrix = np.stack(list(context_emb.dense.values()))
-        for a in action_embs:
-            action_names = list(a.dense.keys())
-            product = np.dot(context_matrix, np.stack(list(a.dense.values()).T))
-            a['dotproduct'] = {f'{context_names[i]}_{action_names[j]}': product[i, j] for i in range(len(context_names)) for j in range(len(action_names))} 
-            
+        if self.auto_embed:
+            self._dotproducts(context_emb, action_embs)
+            self._generic_namespaces(context_emb, action_embs)
+        
         nactions = len(action_embs)
         context_str = f"shared {VwTxt.featurized_2_str(context_emb)}"
         selected = event.selected
@@ -122,28 +154,6 @@ class PickBestFeaturizer(base.Featurizer[PickBestEvent]):
         actions_str = [f"{l}{VwTxt.featurized_2_str(a)}" for a, l in zip(action_embs, labels)]
         return "\n".join([context_str] + actions_str)
     
-    def _featurize_auto_embed_off(self, event: PickBestEvent) -> str:
-        """
-        Converts the `BasedOn` and `ToSelectFrom` into a format that can be used by VW
-        """
-        context_emb = event.context(self.model)
-        action_embs = event.actions(self.model)
-
-        nactions = len(action_embs)
-        context_str = f"shared {VwTxt.featurized_2_str(context_emb)}"
-        selected = event.selected
-        labels = ["" for _ in range(nactions)]
-        if selected.score is not None:
-            labels[selected.index] = f"{selected.index}:{-selected.score}:{selected.probability} "
-        actions_str = [f"{l}{VwTxt.featurized_2_str(a)}" for a, l in zip(action_embs, labels)]
-        return "\n".join([context_str] + actions_str)
-
-    def format(self, event: PickBestEvent) -> str:
-        if self.auto_embed:
-            return self._featurize_auto_embed_on(event)
-        else:
-            return self._featurize_auto_embed_off(event)
-
 
 class PickBestRandomPolicy(base.Policy[PickBestEvent]):
     def __init__(self):
