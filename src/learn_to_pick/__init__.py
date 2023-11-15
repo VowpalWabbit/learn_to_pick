@@ -59,5 +59,4 @@ __all__ = [
     "VwPolicy",
     "VwLogger",
     "embed",
-    "stringify_embedding",
 ]

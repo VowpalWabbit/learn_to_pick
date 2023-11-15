@@ -5,6 +5,7 @@ from test_utils import MockEncoder, MockEncoderReturnsList, assert_vw_ex_equals
 
 import learn_to_pick
 import learn_to_pick.base as rl_loop
+from learn_to_pick.pick_best import vw_cb_formatter
 
 encoded_keyword = "[encoded]"
 
@@ -161,15 +162,19 @@ def test_everything_embedded() -> None:
     str1 = "0"
     str2 = "1"
     str3 = "2"
-    encoded_str1 = rl_loop._stringify_embedding(list(encoded_keyword + str1))
-    encoded_str2 = rl_loop._stringify_embedding(list(encoded_keyword + str2))
-    encoded_str3 = rl_loop._stringify_embedding(list(encoded_keyword + str3))
+    action_dense = "0:1.0 1:0.0"
 
     ctx_str_1 = "context1"
+    encoded_ctx_str_1 = "0:8.0 1:0.0"
 
-    encoded_ctx_str_1 = rl_loop._stringify_embedding(list(encoded_keyword + ctx_str_1))
-
-    expected = f"""shared |User {ctx_str_1 + " " + encoded_ctx_str_1} \n|action {str1 + " " + encoded_str1} \n|action {str2 + " " + encoded_str2} \n|action {str3 + " " + encoded_str3} """  # noqa
+    expected = "\n".join(
+        [
+            f"shared |User_dense {encoded_ctx_str_1} |User_sparse default_ft:={ctx_str_1}",
+            f"|action_dense {action_dense} |action_sparse default_ft:={str1}",
+            f"|action_dense {action_dense} |action_sparse default_ft:={str2}",
+            f"|action_dense {action_dense} |action_sparse default_ft:={str3}",
+        ]
+    )  # noqa
 
     actions = [str1, str2, str3]
 
@@ -178,7 +183,7 @@ def test_everything_embedded() -> None:
         action=rl_loop.EmbedAndKeep(learn_to_pick.ToSelectFrom(actions)),
     )
     picked_metadata = response["picked_metadata"]  # type: ignore
-    vw_str = featurizer.format(picked_metadata)  # type: ignore
+    vw_str = vw_cb_formatter(*featurizer.featurize(picked_metadata))  # type: ignore
     assert_vw_ex_equals(vw_str, expected)
 
 
@@ -191,7 +196,14 @@ def test_default_auto_embedder_is_off() -> None:
     str3 = "2"
     ctx_str_1 = "context1"
 
-    expected = f"""shared |User {ctx_str_1} \n|action {str1} \n|action {str2} \n|action {str3} """  # noqa
+    expected = "\n".join(
+        [
+            f"shared |User_sparse default_ft:={ctx_str_1}",
+            f"|action_sparse default_ft:={str1}",
+            f"|action_sparse default_ft:={str2}",
+            f"|action_sparse default_ft:={str3}",
+        ]
+    )  # noqa
 
     actions = [str1, str2, str3]
 
@@ -200,7 +212,7 @@ def test_default_auto_embedder_is_off() -> None:
         action=learn_to_pick.base.ToSelectFrom(actions),
     )
     picked_metadata = response["picked_metadata"]  # type: ignore
-    vw_str = featurizer.format(picked_metadata)  # type: ignore
+    vw_str = vw_cb_formatter(*featurizer.featurize(picked_metadata))  # type: ignore
     assert_vw_ex_equals(vw_str, expected)
 
 
@@ -213,7 +225,14 @@ def test_default_w_embeddings_off() -> None:
     str3 = "2"
     ctx_str_1 = "context1"
 
-    expected = f"""shared |User {ctx_str_1} \n|action {str1} \n|action {str2} \n|action {str3} """  # noqa
+    expected = "\n".join(
+        [
+            f"shared |User_sparse default_ft:={ctx_str_1}",
+            f"|action_sparse default_ft:={str1}",
+            f"|action_sparse default_ft:={str2}",
+            f"|action_sparse default_ft:={str3}",
+        ]
+    )  # noqa
 
     actions = [str1, str2, str3]
 
@@ -222,7 +241,7 @@ def test_default_w_embeddings_off() -> None:
         action=learn_to_pick.ToSelectFrom(actions),
     )
     picked_metadata = response["picked_metadata"]  # type: ignore
-    vw_str = featurizer.format(picked_metadata)  # type: ignore
+    vw_str = vw_cb_formatter(*featurizer.featurize(picked_metadata))  # type: ignore
     assert_vw_ex_equals(vw_str, expected)
 
 
@@ -235,9 +254,15 @@ def test_default_w_embeddings_on() -> None:
     str1 = "0"
     str2 = "1"
     ctx_str_1 = "context1"
-    dot_prod = "dotprod 0:5.0"  # dot prod of [1.0, 2.0] and [1.0, 2.0]
+    dot_prod = "dotprod_sparse User_action:5.0"  # dot prod of [1.0, 2.0] and [1.0, 2.0]
 
-    expected = f"""shared |User {ctx_str_1} |@ User={ctx_str_1}\n|action {str1} |# action={str1} |{dot_prod}\n|action {str2} |# action={str2} |{dot_prod}"""  # noqa
+    expected = "\n".join(
+        [
+            f"shared |User_sparse default_ft:={ctx_str_1} |@_sparse User:={ctx_str_1}",
+            f"|action_sparse default_ft:={str1} |{dot_prod} |#_sparse action:={str1} ",
+            f"|action_sparse default_ft:={str2} |{dot_prod} |#_sparse action:={str2} ",
+        ]
+    )  # noqa
 
     actions = [str1, str2]
 
@@ -246,7 +271,7 @@ def test_default_w_embeddings_on() -> None:
         action=learn_to_pick.ToSelectFrom(actions),
     )
     picked_metadata = response["picked_metadata"]  # type: ignore
-    vw_str = featurizer.format(picked_metadata)  # type: ignore
+    vw_str = vw_cb_formatter(*featurizer.featurize(picked_metadata))  # type: ignore
     assert_vw_ex_equals(vw_str, expected)
 
 
