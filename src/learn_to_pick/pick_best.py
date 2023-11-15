@@ -123,14 +123,14 @@ class PickBestFeaturizer(base.Featurizer[PickBestEvent]):
     def _dotproducts(self, context, actions):
         _context_dense = base.Featurized()
         for ns in context.sparse.keys():
-            if "raw" in context.sparse[ns]:
-                _context_dense[ns] = self.model.encode(context.sparse[ns]["raw"])
+            if "default_ft" in context.sparse[ns]:
+                _context_dense[ns] = self.model.encode(context.sparse[ns]["default_ft"])
 
         _actions_dense = [base.Featurized() for _ in range(len(actions))]
         for _action, action in zip(_actions_dense, actions):
             for ns in action.sparse.keys():
-                if "raw" in action.sparse[ns]:
-                    _action[ns] = self.model.encode(action.sparse[ns]["raw"])
+                if "default_ft" in action.sparse[ns]:
+                    _action[ns] = self.model.encode(action.sparse[ns]["default_ft"])
 
         context_names = list(_context_dense.dense.keys())
         context_matrix = np.stack(list(_context_dense.dense.values()))
@@ -146,8 +146,8 @@ class PickBestFeaturizer(base.Featurizer[PickBestEvent]):
     def _generic_namespace(self, featurized):
         result = base.SparseFeatures()
         for ns in featurized.sparse.keys():
-            if "raw" in featurized.sparse[ns]:
-                result[ns] = featurized.sparse[ns]["raw"]
+            if "default_ft" in featurized.sparse[ns]:
+                result[ns] = featurized.sparse[ns]["default_ft"]
         return result
 
     def _generic_namespaces(self, context, actions):

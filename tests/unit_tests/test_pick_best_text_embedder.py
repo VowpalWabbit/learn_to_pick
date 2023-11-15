@@ -35,10 +35,10 @@ def test_pickbest_textembedder_no_label_no_emb() -> None:
     named_actions = {"action": ["0", "1", "2"]}
     expected = "\n".join(
         [
-            "shared |context_sparse raw:=context",
-            "|action_sparse raw:=0",
-            "|action_sparse raw:=1",
-            "|action_sparse raw:=2",
+            "shared |context_sparse default_ft:=context",
+            "|action_sparse default_ft:=0",
+            "|action_sparse default_ft:=1",
+            "|action_sparse default_ft:=2",
         ]
     )
 
@@ -56,10 +56,10 @@ def test_pickbest_textembedder_w_label_no_score_no_emb() -> None:
     named_actions = {"action": ["0", "1", "2"]}
     expected = "\n".join(
         [
-            "shared |context_sparse raw:=context",
-            "|action_sparse raw:=0",
-            "|action_sparse raw:=1",
-            "|action_sparse raw:=2",
+            "shared |context_sparse default_ft:=context",
+            "|action_sparse default_ft:=0",
+            "|action_sparse default_ft:=1",
+            "|action_sparse default_ft:=2",
         ]
     )
     selected = pick_best_chain.PickBestSelected(index=0, probability=1.0)
@@ -80,10 +80,10 @@ def test_pickbest_textembedder_w_full_label_no_emb() -> None:
     named_actions = {"action": ["0", "1", "2"]}
     expected = "\n".join(
         [
-            "shared |context_sparse raw:=context",
-            "0:-0.0:1.0 |action_sparse raw:=0",
-            "|action_sparse raw:=1",
-            "|action_sparse raw:=2",
+            "shared |context_sparse default_ft:=context",
+            "0:-0.0:1.0 |action_sparse default_ft:=0",
+            "|action_sparse default_ft:=1",
+            "|action_sparse default_ft:=2",
         ]
     )
 
@@ -142,10 +142,10 @@ def test_pickbest_textembedder_w_full_label_w_embed_and_keep() -> None:
     context = {"context": rl_chain.EmbedAndKeep(ctx_str)}
     expected = "\n".join(
         [
-            f"shared |context_dense {encoded_ctx_str} |context_sparse raw:={ctx_str}",
-            "0:-0.0:1.0 |action_dense 0:1.0 1:0.0 |action_sparse raw:=0",
-            "|action_dense 0:1.0 1:0.0 |action_sparse raw:=1",
-            "|action_dense 0:1.0 1:0.0 |action_sparse raw:=2",
+            f"shared |context_dense {encoded_ctx_str} |context_sparse default_ft:={ctx_str}",
+            "0:-0.0:1.0 |action_dense 0:1.0 1:0.0 |action_sparse default_ft:=0",
+            "|action_dense 0:1.0 1:0.0 |action_sparse default_ft:=1",
+            "|action_dense 0:1.0 1:0.0 |action_sparse default_ft:=2",
         ]
     )  # noqa: E501
     selected = pick_best_chain.PickBestSelected(index=0, probability=1.0, score=0.0)
@@ -164,10 +164,10 @@ def test_pickbest_textembedder_more_namespaces_no_label_no_emb() -> None:
     context = {"context1": "context1", "context2": "context2"}
     expected = "\n".join(
         [
-            "shared |context1_sparse raw:=context1 |context2_sparse raw:=context2 ",
-            "|a_sparse raw:=0 |b_sparse raw:=0",
-            "|action1_sparse raw:=1",
-            "|action1_sparse raw:=2",
+            "shared |context1_sparse default_ft:=context1 |context2_sparse default_ft:=context2 ",
+            "|a_sparse default_ft:=0 |b_sparse default_ft:=0",
+            "|action1_sparse default_ft:=1",
+            "|action1_sparse default_ft:=2",
         ]
     )  # noqa: E501
     event = pick_best_chain.PickBestEvent(
@@ -185,10 +185,10 @@ def test_pickbest_textembedder_more_namespaces_w_label_no_emb() -> None:
     context = {"context1": "context1", "context2": "context2"}
     expected = "\n".join(
         [
-            "shared |context1_sparse raw:=context1 |context2_sparse raw:=context2",
-            "|a_sparse raw:=0 |b_sparse raw:=0",
-            "|action_sparse raw:=1",
-            "|action_sparse raw:=2",
+            "shared |context1_sparse default_ft:=context1 |context2_sparse default_ft:=context2",
+            "|a_sparse default_ft:=0 |b_sparse default_ft:=0",
+            "|action_sparse default_ft:=1",
+            "|action_sparse default_ft:=2",
         ]
     )  # noqa: E501
     selected = pick_best_chain.PickBestSelected(index=0, probability=1.0)
@@ -207,10 +207,10 @@ def test_pickbest_textembedder_more_namespaces_w_full_label_no_emb() -> None:
     context = {"context1": "context1", "context2": "context2"}
     expected = "\n".join(
         [
-            "shared |context1_sparse raw:=context1 |context2_sparse raw:=context2",
-            "0:-0.0:1.0 |a_sparse raw:=0 |b_sparse raw:=0",
-            "|action_sparse raw:=1",
-            "|action_sparse raw:=2",
+            "shared |context1_sparse default_ft:=context1 |context2_sparse default_ft:=context2",
+            "0:-0.0:1.0 |a_sparse default_ft:=0 |b_sparse default_ft:=0",
+            "|action_sparse default_ft:=1",
+            "|action_sparse default_ft:=2",
         ]
     )  # noqa: E501
     selected = pick_best_chain.PickBestSelected(index=0, probability=1.0, score=0.0)
@@ -282,10 +282,10 @@ def test_pickbest_textembedder_more_namespaces_w_full_label_w_full_embed_and_kee
     }
     expected = "\n".join(
         [
-            f"shared |context1_dense {encoded_ctx_str_1} |context2_dense {encoded_ctx_str_2} |context1_sparse raw:={ctx_str_1} |context2_sparse raw:={ctx_str_2}",
-            f"0:-0.0:1.0 |a_dense 0:1.0 1:0.0 |b_dense 0:1.0 1:0.0 |a_sparse raw:=0 |b_sparse raw:=0",
-            f"|action_dense 0:1.0 1:0.0 |action_sparse raw:=1",
-            f"|action_dense 0:1.0 1:0.0 |action_sparse raw:=2",
+            f"shared |context1_dense {encoded_ctx_str_1} |context2_dense {encoded_ctx_str_2} |context1_sparse default_ft:={ctx_str_1} |context2_sparse default_ft:={ctx_str_2}",
+            f"0:-0.0:1.0 |a_dense 0:1.0 1:0.0 |b_dense 0:1.0 1:0.0 |a_sparse default_ft:=0 |b_sparse default_ft:=0",
+            f"|action_dense 0:1.0 1:0.0 |action_sparse default_ft:=1",
+            f"|action_dense 0:1.0 1:0.0 |action_sparse default_ft:=2",
         ]
     )  # noqa: E501
 
@@ -317,9 +317,9 @@ def test_pickbest_textembedder_more_namespaces_w_full_label_w_partial_emb() -> N
 
     expected = "\n".join(
         [
-            f"shared |context2_dense {encoded_ctx_str_2} |context1_sparse raw:={ctx_str_1}",
-            f"0:-0.0:1.0 |b_dense 0:1.0 1:0.0 |a_sparse raw:=0",
-            f"|action_sparse raw:=1",
+            f"shared |context2_dense {encoded_ctx_str_2} |context1_sparse default_ft:={ctx_str_1}",
+            f"0:-0.0:1.0 |b_dense 0:1.0 1:0.0 |a_sparse default_ft:=0",
+            f"|action_sparse default_ft:=1",
             f"|action_dense 0:1.0 1:0.0",
         ]
     )  # noqa: E501
@@ -355,10 +355,10 @@ def test_pickbest_textembedder_more_namespaces_w_full_label_w_partial_emakeep() 
     context = {"context1": ctx_str_1, "context2": rl_chain.EmbedAndKeep(ctx_str_2)}
     expected = "\n".join(
         [
-            f"shared |context2_dense {encoded_ctx_str_2} |context1_sparse raw:={ctx_str_1} |context2_sparse raw:={ctx_str_2}",
-            f"0:-0.0:1.0 |b_dense 0:1.0 1:0.0 |a_sparse raw:=0 |b_sparse raw:=0",
-            f"|action_sparse raw:=1",
-            f"|action_dense 0:1.0 1:0.0 |action_sparse raw:=2",
+            f"shared |context2_dense {encoded_ctx_str_2} |context1_sparse default_ft:={ctx_str_1} |context2_sparse default_ft:={ctx_str_2}",
+            f"0:-0.0:1.0 |b_dense 0:1.0 1:0.0 |a_sparse default_ft:=0 |b_sparse default_ft:=0",
+            f"|action_sparse default_ft:=1",
+            f"|action_dense 0:1.0 1:0.0 |action_sparse default_ft:=2",
         ]
     )  # noqa: E501
     selected = pick_best_chain.PickBestSelected(index=0, probability=1.0, score=0.0)
@@ -386,8 +386,8 @@ def test_raw_features_underscored() -> None:
     context = {"context": ctx_str}
     expected_no_embed = "\n".join(
         [
-            f"shared |context_sparse raw:={ctx_str_underscored}",
-            f"|action_sparse raw:={str1_underscored}",
+            f"shared |context_sparse default_ft:={ctx_str_underscored}",
+            f"|action_sparse default_ft:={str1_underscored}",
         ]
     )
 
@@ -414,8 +414,8 @@ def test_raw_features_underscored() -> None:
     context = {"context": rl_chain.EmbedAndKeep(ctx_str)}
     expected_embed_and_keep = "\n".join(
         [
-            f"shared |context_dense {encoded_ctx_str} |context_sparse raw:={ctx_str_underscored}",
-            f"|action_dense {encoded_str1} |action_sparse raw:={str1_underscored}",
+            f"shared |context_dense {encoded_ctx_str} |context_sparse default_ft:={ctx_str_underscored}",
+            f"|action_dense {encoded_str1} |action_sparse default_ft:={str1_underscored}",
         ]
     )  # noqa: E501
     event = pick_best_chain.PickBestEvent(

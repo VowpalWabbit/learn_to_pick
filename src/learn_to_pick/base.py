@@ -497,10 +497,10 @@ def _embed_string_type(
         result[namespace] = DenseFeatures(model.encode(item.value))
         if item.keep:
             keep_str = item.value.replace(" ", "_")
-            result[namespace] = {"raw": re.sub(r"[\t\n\r\f\v]+", " ", keep_str)}
+            result[namespace] = {"default_ft": re.sub(r"[\t\n\r\f\v]+", " ", keep_str)}
     elif isinstance(item, str):
         encoded = item.replace(" ", "_")
-        result[namespace] = {"raw": re.sub(r"[\t\n\r\f\v]+", " ", encoded)}
+        result[namespace] = {"default_ft": re.sub(r"[\t\n\r\f\v]+", " ", encoded)}
     else:
         raise ValueError(f"Unsupported type {type(item)} for embedding")
 
