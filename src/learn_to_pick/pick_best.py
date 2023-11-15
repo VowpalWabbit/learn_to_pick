@@ -30,6 +30,7 @@ class PickBestSelected(base.Selected):
         self.probability = probability
         self.score = score
 
+
 class PickBestEvent(base.Event[PickBestSelected]):
     def __init__(
         self,
@@ -65,6 +66,7 @@ class PickBestEvent(base.Event[PickBestSelected]):
             )
         return action_embs
 
+
 class VwTxt:
     @staticmethod
     def _dense_2_str(values: base.DenseFeatures) -> str:
@@ -74,15 +76,27 @@ class VwTxt:
     def _sparse_2_str(values: base.SparseFeatures) -> str:
         def _to_str(v):
             import numbers
-            return v if isinstance(v, numbers.Number) else f'={v}'
+
+            return v if isinstance(v, numbers.Number) else f"={v}"
 
         return " ".join([f"{k}:{_to_str(v)}" for k, v in values.items()])
-    
+
     @staticmethod
     def featurized_2_str(obj: base.Featurized) -> str:
-        return " ".join(chain.from_iterable([
-            map(lambda kv: f'|{kv[0]}_dense {VwTxt._dense_2_str(kv[1])}', obj.dense.items()),
-            map(lambda kv: f'|{kv[0]}_sparse {VwTxt._sparse_2_str(kv[1])}', obj.sparse.items())]))
+        return " ".join(
+            chain.from_iterable(
+                [
+                    map(
+                        lambda kv: f"|{kv[0]}_dense {VwTxt._dense_2_str(kv[1])}",
+                        obj.dense.items(),
+                    ),
+                    map(
+                        lambda kv: f"|{kv[0]}_sparse {VwTxt._sparse_2_str(kv[1])}",
+                        obj.sparse.items(),
+                    ),
+                ]
+            )
+        )
 
 
 class PickBestFeaturizer(base.Featurizer[PickBestEvent]):
@@ -109,54 +123,64 @@ class PickBestFeaturizer(base.Featurizer[PickBestEvent]):
     def _dotproducts(self, context, actions):
         _context_dense = base.Featurized()
         for ns in context.sparse.keys():
-            if 'raw' in context.sparse[ns]:
-                _context_dense[ns] = self.model.encode(context.sparse[ns]['raw'])
+            if "raw" in context.sparse[ns]:
+                _context_dense[ns] = self.model.encode(context.sparse[ns]["raw"])
 
         _actions_dense = [base.Featurized() for _ in range(len(actions))]
         for _action, action in zip(_actions_dense, actions):
             for ns in action.sparse.keys():
-                if 'raw' in action.sparse[ns]:
-                    _action[ns] = self.model.encode(action.sparse[ns]['raw'])
+                if "raw" in action.sparse[ns]:
+                    _action[ns] = self.model.encode(action.sparse[ns]["raw"])
 
         context_names = list(_context_dense.dense.keys())
         context_matrix = np.stack(list(_context_dense.dense.values()))
         for _a, a in zip(_actions_dense, actions):
             action_names = list(_a.dense.keys())
             product = np.dot(context_matrix, np.stack(list(_a.dense.values())).T)
-            a['dotprod'] = {f'{context_names[i]}_{action_names[j]}': product[i, j] for i in range(len(context_names)) for j in range(len(action_names))} 
+            a["dotprod"] = {
+                f"{context_names[i]}_{action_names[j]}": product[i, j]
+                for i in range(len(context_names))
+                for j in range(len(action_names))
+            }
 
     def _generic_namespace(self, featurized):
         result = base.SparseFeatures()
         for ns in featurized.sparse.keys():
-            if 'raw' in featurized.sparse[ns]:
-                result[ns] = featurized.sparse[ns]['raw']
+            if "raw" in featurized.sparse[ns]:
+                result[ns] = featurized.sparse[ns]["raw"]
         return result
 
     def _generic_namespaces(self, context, actions):
-        context['@'] = self._generic_namespace(context)
+        context["@"] = self._generic_namespace(context)
         for a in actions:
-            a['#'] = self._generic_namespace(a)
+            a["#"] = self._generic_namespace(a)
 
-    def featurize(self, event: PickBestEvent) -> Tuple[base.Featurized, List[base.Featurized], PickBestSelected]:
+    def featurize(
+        self, event: PickBestEvent
+    ) -> Tuple[base.Featurized, List[base.Featurized], PickBestSelected]:
         context = event.context(self.model)
         actions = event.actions(self.model)
 
         if self.auto_embed:
             self._dotproducts(context, actions)
             self._generic_namespaces(context, actions)
-        
+
         return context, actions, event.selected
 
 
-def vw_cb_formatter(context: base.Featurized, actions: List[base.Featurized], selected: PickBestSelected) -> str:
+def vw_cb_formatter(
+    context: base.Featurized, actions: List[base.Featurized], selected: PickBestSelected
+) -> str:
     nactions = len(actions)
     context_str = f"shared {VwTxt.featurized_2_str(context)}"
     labels = ["" for _ in range(nactions)]
     if selected.score is not None:
-        labels[selected.index] = f"{selected.index}:{-selected.score}:{selected.probability} "
+        labels[
+            selected.index
+        ] = f"{selected.index}:{-selected.score}:{selected.probability} "
     actions_str = [f"{l}{VwTxt.featurized_2_str(a)}" for a, l in zip(actions, labels)]
     return "\n".join([context_str] + actions_str)
-    
+
 
 class PickBestRandomPolicy(base.Policy[PickBestEvent]):
     def __init__(self):
@@ -235,7 +259,9 @@ class PickBest(base.RLLoop[PickBestEvent]):
         sampled_ap = prediction[sampled_index]
         sampled_action = sampled_ap[0]
         sampled_prob = sampled_ap[1]
-        event.selected = PickBestSelected(index=sampled_action, probability=sampled_prob)
+        event.selected = PickBestSelected(
+            index=sampled_action, probability=sampled_prob
+        )
 
         next_inputs = inputs.copy()
 

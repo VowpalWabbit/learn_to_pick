@@ -13,7 +13,7 @@ from typing import (
     Type,
     TypeVar,
     Union,
-    Callable
+    Callable,
 )
 
 from learn_to_pick.metrics import MetricsTrackerAverage, MetricsTrackerRollingWindow
@@ -183,9 +183,7 @@ class VwPolicy(Policy):
         import vowpal_wabbit_next as vw
 
         text_parser = vw.TextFormatParser(self.workspace)
-        return self.workspace.predict_one(
-            _parse_lines(text_parser, self.format(event))
-        )
+        return self.workspace.predict_one(_parse_lines(text_parser, self.format(event)))
 
     def learn(self, event: TEvent) -> None:
         import vowpal_wabbit_next as vw
@@ -489,18 +487,20 @@ class RLLoop(Generic[TEvent]):
 
 
 def _embed_string_type(
-    item: Union[str, _Embed], model: Any, namespace: str) -> Featurized:
+    item: Union[str, _Embed], model: Any, namespace: str
+) -> Featurized:
     """Helper function to embed a string or an _Embed object."""
     import re
+
     result = Featurized()
     if isinstance(item, _Embed):
         result[namespace] = DenseFeatures(model.encode(item.value))
         if item.keep:
             keep_str = item.value.replace(" ", "_")
-            result[namespace] = {'raw': re.sub(r"[\t\n\r\f\v]+", " ", keep_str)}
+            result[namespace] = {"raw": re.sub(r"[\t\n\r\f\v]+", " ", keep_str)}
     elif isinstance(item, str):
         encoded = item.replace(" ", "_")
-        result[namespace] = {'raw': re.sub(r"[\t\n\r\f\v]+", " ", encoded)}
+        result[namespace] = {"raw": re.sub(r"[\t\n\r\f\v]+", " ", encoded)}
     else:
         raise ValueError(f"Unsupported type {type(item)} for embedding")
 
@@ -513,7 +513,7 @@ def _embed_dict_type(item: Dict, model: Any) -> Featurized:
     for ns, embed_item in item.items():
         if isinstance(embed_item, list):
             for idx, embed_list_item in enumerate(embed_item):
-                result.merge(_embed_string_type(embed_list_item, model, f'{ns}_{idx}'))
+                result.merge(_embed_string_type(embed_list_item, model, f"{ns}_{idx}"))
         else:
             result.merge(_embed_string_type(embed_item, model, ns))
     return result
@@ -529,7 +529,7 @@ def _embed_list_type(
         elif isinstance(embed_item, list):
             result.append(Featurized())
             for idx, embed_list_item in enumerate(embed_item):
-                result[-1].merge(_embed_string_type(embed_list_item, model, f'{idx}'))
+                result[-1].merge(_embed_string_type(embed_list_item, model, f"{idx}"))
         else:
             result.append(_embed_string_type(embed_item, model, namespace))
     return result

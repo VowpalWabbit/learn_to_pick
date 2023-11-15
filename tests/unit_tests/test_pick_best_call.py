@@ -163,15 +163,18 @@ def test_everything_embedded() -> None:
     str2 = "1"
     str3 = "2"
     action_dense = "0:1.0 1:0.0"
-    
+
     ctx_str_1 = "context1"
     encoded_ctx_str_1 = "0:8.0 1:0.0"
 
-    expected = "\n".join([
-        f"shared |User_dense {encoded_ctx_str_1} |User_sparse raw:={ctx_str_1}",
-        f"|action_dense {action_dense} |action_sparse raw:={str1}",
-        f"|action_dense {action_dense} |action_sparse raw:={str2}",
-        f"|action_dense {action_dense} |action_sparse raw:={str3}"])  # noqa
+    expected = "\n".join(
+        [
+            f"shared |User_dense {encoded_ctx_str_1} |User_sparse raw:={ctx_str_1}",
+            f"|action_dense {action_dense} |action_sparse raw:={str1}",
+            f"|action_dense {action_dense} |action_sparse raw:={str2}",
+            f"|action_dense {action_dense} |action_sparse raw:={str3}",
+        ]
+    )  # noqa
 
     actions = [str1, str2, str3]
 
@@ -193,11 +196,14 @@ def test_default_auto_embedder_is_off() -> None:
     str3 = "2"
     ctx_str_1 = "context1"
 
-    expected = "\n".join([
-        f"shared |User_sparse raw:={ctx_str_1}",
-        f"|action_sparse raw:={str1}",
-        f"|action_sparse raw:={str2}",
-        f"|action_sparse raw:={str3}"])  # noqa
+    expected = "\n".join(
+        [
+            f"shared |User_sparse raw:={ctx_str_1}",
+            f"|action_sparse raw:={str1}",
+            f"|action_sparse raw:={str2}",
+            f"|action_sparse raw:={str3}",
+        ]
+    )  # noqa
 
     actions = [str1, str2, str3]
 
@@ -219,11 +225,14 @@ def test_default_w_embeddings_off() -> None:
     str3 = "2"
     ctx_str_1 = "context1"
 
-    expected = "\n".join([
-        f"shared |User_sparse raw:={ctx_str_1}",
-        f"|action_sparse raw:={str1}",
-        f"|action_sparse raw:={str2}",
-        f"|action_sparse raw:={str3}"])  # noqa
+    expected = "\n".join(
+        [
+            f"shared |User_sparse raw:={ctx_str_1}",
+            f"|action_sparse raw:={str1}",
+            f"|action_sparse raw:={str2}",
+            f"|action_sparse raw:={str3}",
+        ]
+    )  # noqa
 
     actions = [str1, str2, str3]
 
@@ -247,10 +256,13 @@ def test_default_w_embeddings_on() -> None:
     ctx_str_1 = "context1"
     dot_prod = "dotprod_sparse User_action:5.0"  # dot prod of [1.0, 2.0] and [1.0, 2.0]
 
-    expected = "\n".join([
-        f"shared |User_sparse raw:={ctx_str_1} |@_sparse User:={ctx_str_1}",
-        f"|action_sparse raw:={str1} |{dot_prod} |#_sparse action:={str1} ",
-        f"|action_sparse raw:={str2} |{dot_prod} |#_sparse action:={str2} "])  # noqa
+    expected = "\n".join(
+        [
+            f"shared |User_sparse raw:={ctx_str_1} |@_sparse User:={ctx_str_1}",
+            f"|action_sparse raw:={str1} |{dot_prod} |#_sparse action:={str1} ",
+            f"|action_sparse raw:={str2} |{dot_prod} |#_sparse action:={str2} ",
+        ]
+    )  # noqa
 
     actions = [str1, str2]
 
