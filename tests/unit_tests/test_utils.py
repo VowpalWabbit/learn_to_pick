@@ -3,7 +3,7 @@ from typing import Any, List
 
 class MockEncoder:
     def encode(self, to_encode: str) -> str:
-        return "[encoded]" + to_encode
+        return [float(len(to_encode)), 0.0]
 
 
 class MockEncoderReturnsList:

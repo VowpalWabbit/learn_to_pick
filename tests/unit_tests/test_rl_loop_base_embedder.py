@@ -5,368 +5,411 @@ from test_utils import MockEncoder
 
 import learn_to_pick.base as base
 
-encoded_keyword = "[encoded]"
-
 
 def test_simple_context_str_no_emb() -> None:
-    expected = [{"a_namespace": "test"}]
-    assert base.embed("test", MockEncoder(), "a_namespace") == expected
+    expected = {"a_namespace": {"default_ft": "test"}}
+
+    featurized = base.embed("test", MockEncoder(), "a_namespace")
+    assert featurized.sparse == expected
+    assert featurized.dense == {}
 
 
 def test_simple_context_str_w_emb() -> None:
     str1 = "test"
-    encoded_str1 = base._stringify_embedding(list(encoded_keyword + str1))
-    expected = [{"a_namespace": encoded_str1}]
-    assert base.embed(base.Embed(str1), MockEncoder(), "a_namespace") == expected
-    expected_embed_and_keep = [{"a_namespace": str1 + " " + encoded_str1}]
-    assert (
-        base.embed(base.EmbedAndKeep(str1), MockEncoder(), "a_namespace")
-        == expected_embed_and_keep
-    )
+    expected_dense = {"a_namespace": [4.0, 0.0]}
+    expected_sparse = {"a_namespace": {"default_ft": str1}}
+
+    featurized = base.embed(base.Embed(str1), MockEncoder(), "a_namespace")
+    assert featurized.dense == expected_dense
+    assert featurized.sparse == {}
+
+    featurized = base.embed(base.EmbedAndKeep(str1), MockEncoder(), "a_namespace")
+    assert featurized.sparse == expected_sparse
+    assert featurized.dense == expected_dense
 
 
 def test_simple_context_str_w_nested_emb() -> None:
     # nested embeddings, innermost wins
     str1 = "test"
-    encoded_str1 = base._stringify_embedding(list(encoded_keyword + str1))
-    expected = [{"a_namespace": encoded_str1}]
-    assert (
-        base.embed(base.EmbedAndKeep(base.Embed(str1)), MockEncoder(), "a_namespace")
-        == expected
-    )
+    expected_dense = {"a_namespace": [4.0, 0.0]}
+    expected_sparse = {"a_namespace": {"default_ft": str1}}
 
-    expected2 = [{"a_namespace": str1 + " " + encoded_str1}]
-    assert (
-        base.embed(base.Embed(base.EmbedAndKeep(str1)), MockEncoder(), "a_namespace")
-        == expected2
+    featurized = base.embed(
+        base.EmbedAndKeep(base.Embed(str1)), MockEncoder(), "a_namespace"
     )
+    assert featurized.dense == expected_dense
+    assert featurized.sparse == {}
+
+    featurized = base.embed(
+        base.Embed(base.EmbedAndKeep(str1)), MockEncoder(), "a_namespace"
+    )
+    assert featurized.sparse == expected_sparse
+    assert featurized.dense == expected_dense
 
 
 def test_context_w_namespace_no_emb() -> None:
-    expected = [{"test_namespace": "test"}]
-    assert base.embed({"test_namespace": "test"}, MockEncoder()) == expected
+    expected_sparse = {"test_namespace": {"default_ft": "test"}}
+    featurized = base.embed({"test_namespace": "test"}, MockEncoder())
+    assert featurized.sparse == expected_sparse
+    assert featurized.dense == {}
 
 
 def test_context_w_namespace_w_emb() -> None:
     str1 = "test"
-    encoded_str1 = base._stringify_embedding(list(encoded_keyword + str1))
-    expected = [{"test_namespace": encoded_str1}]
-    assert base.embed({"test_namespace": base.Embed(str1)}, MockEncoder()) == expected
-    expected_embed_and_keep = [{"test_namespace": str1 + " " + encoded_str1}]
-    assert (
-        base.embed({"test_namespace": base.EmbedAndKeep(str1)}, MockEncoder())
-        == expected_embed_and_keep
-    )
+    expected_sparse = {"test_namespace": {"default_ft": str1}}
+    expected_dense = {"test_namespace": [4.0, 0.0]}
+
+    featurized = base.embed({"test_namespace": base.Embed(str1)}, MockEncoder())
+    assert featurized.sparse == {}
+    assert featurized.dense == expected_dense
+
+    featurized = base.embed({"test_namespace": base.EmbedAndKeep(str1)}, MockEncoder())
+    assert featurized.sparse == expected_sparse
+    assert featurized.dense == expected_dense
 
 
 def test_context_w_namespace_w_emb2() -> None:
     str1 = "test"
-    encoded_str1 = base._stringify_embedding(list(encoded_keyword + str1))
-    expected = [{"test_namespace": encoded_str1}]
-    assert base.embed(base.Embed({"test_namespace": str1}), MockEncoder()) == expected
-    expected_embed_and_keep = [{"test_namespace": str1 + " " + encoded_str1}]
-    assert (
-        base.embed(base.EmbedAndKeep({"test_namespace": str1}), MockEncoder())
-        == expected_embed_and_keep
-    )
+    expected_sparse = {"test_namespace": {"default_ft": str1}}
+    expected_dense = {"test_namespace": [4.0, 0.0]}
+
+    featurized = base.embed(base.Embed({"test_namespace": str1}), MockEncoder())
+    assert featurized.sparse == {}
+    assert featurized.dense == expected_dense
+
+    featurized = base.embed(base.EmbedAndKeep({"test_namespace": str1}), MockEncoder())
+    assert featurized.sparse == expected_sparse
+    assert featurized.dense == expected_dense
 
 
 def test_context_w_namespace_w_some_emb() -> None:
-    str1 = "test1"
-    str2 = "test2"
-    encoded_str2 = base._stringify_embedding(list(encoded_keyword + str2))
-    expected = [{"test_namespace": str1, "test_namespace2": encoded_str2}]
-    assert (
-        base.embed(
-            {"test_namespace": str1, "test_namespace2": base.Embed(str2)}, MockEncoder()
-        )
-        == expected
+    str1 = "test"
+    str2 = "test_"
+    expected_sparse = {"test_namespace": {"default_ft": str1}}
+    expected_dense = {"test_namespace2": [5.0, 0.0]}
+    featurized = base.embed(
+        {"test_namespace": str1, "test_namespace2": base.Embed(str2)}, MockEncoder()
     )
-    expected_embed_and_keep = [
-        {"test_namespace": str1, "test_namespace2": str2 + " " + encoded_str2}
-    ]
-    assert (
-        base.embed(
-            {"test_namespace": str1, "test_namespace2": base.EmbedAndKeep(str2)},
-            MockEncoder(),
-        )
-        == expected_embed_and_keep
+    assert featurized.sparse == expected_sparse
+    assert featurized.dense == expected_dense
+
+    expected_sparse = {
+        "test_namespace": {"default_ft": str1},
+        "test_namespace2": {"default_ft": str2},
+    }
+    featurized = base.embed(
+        {"test_namespace": str1, "test_namespace2": base.EmbedAndKeep(str2)},
+        MockEncoder(),
     )
+    assert featurized.sparse == expected_sparse
+    assert featurized.dense == expected_dense
 
 
 def test_simple_action_strlist_no_emb() -> None:
     str1 = "test1"
     str2 = "test2"
     str3 = "test3"
-    expected = [{"a_namespace": str1}, {"a_namespace": str2}, {"a_namespace": str3}]
+    expected_sparse = [
+        {"a_namespace": {"default_ft": str1}},
+        {"a_namespace": {"default_ft": str2}},
+        {"a_namespace": {"default_ft": str3}},
+    ]
     to_embed: List[Union[str, base._Embed]] = [str1, str2, str3]
-    assert base.embed(to_embed, MockEncoder(), "a_namespace") == expected
+    featurized = base.embed(to_embed, MockEncoder(), "a_namespace")
+
+    for i in range(len(featurized)):
+        assert featurized[i].sparse == expected_sparse[i]
+        assert featurized[i].dense == {}
 
 
 def test_simple_action_strlist_w_emb() -> None:
-    str1 = "test1"
-    str2 = "test2"
-    str3 = "test3"
-    encoded_str1 = base._stringify_embedding(list(encoded_keyword + str1))
-    encoded_str2 = base._stringify_embedding(list(encoded_keyword + str2))
-    encoded_str3 = base._stringify_embedding(list(encoded_keyword + str3))
-    expected = [
-        {"a_namespace": encoded_str1},
-        {"a_namespace": encoded_str2},
-        {"a_namespace": encoded_str3},
+    str1 = "test"
+    str2 = "test_"
+    str3 = "test__"
+
+    expected_sparse = [
+        {"a_namespace": {"default_ft": str1}},
+        {"a_namespace": {"default_ft": str2}},
+        {"a_namespace": {"default_ft": str3}},
     ]
-    assert (
-        base.embed(base.Embed([str1, str2, str3]), MockEncoder(), "a_namespace")
-        == expected
-    )
-    expected_embed_and_keep = [
-        {"a_namespace": str1 + " " + encoded_str1},
-        {"a_namespace": str2 + " " + encoded_str2},
-        {"a_namespace": str3 + " " + encoded_str3},
+    expected_dense = [
+        {"a_namespace": [4.0, 0.0]},
+        {"a_namespace": [5.0, 0.0]},
+        {"a_namespace": [6.0, 0.0]},
     ]
-    assert (
-        base.embed(base.EmbedAndKeep([str1, str2, str3]), MockEncoder(), "a_namespace")
-        == expected_embed_and_keep
+
+    featurized = base.embed(
+        base.Embed([str1, str2, str3]), MockEncoder(), "a_namespace"
     )
+    for i in range(len(featurized)):
+        assert featurized[i].sparse == {}
+        assert featurized[i].dense == expected_dense[i]
+
+    featurized = base.embed(
+        base.EmbedAndKeep([str1, str2, str3]), MockEncoder(), "a_namespace"
+    )
+    for i in range(len(featurized)):
+        assert featurized[i].sparse == expected_sparse[i]
+        assert featurized[i].dense == expected_dense[i]
 
 
 def test_simple_action_strlist_w_some_emb() -> None:
-    str1 = "test1"
-    str2 = "test2"
-    str3 = "test3"
-    encoded_str2 = base._stringify_embedding(list(encoded_keyword + str2))
-    encoded_str3 = base._stringify_embedding(list(encoded_keyword + str3))
-    expected = [
-        {"a_namespace": str1},
-        {"a_namespace": encoded_str2},
-        {"a_namespace": encoded_str3},
-    ]
-    assert (
-        base.embed(
-            [str1, base.Embed(str2), base.Embed(str3)], MockEncoder(), "a_namespace"
-        )
-        == expected
+    str1 = "test"
+    str2 = "test_"
+    str3 = "test__"
+
+    expected_sparse = [{"a_namespace": {"default_ft": str1}}, {}, {}]
+    expected_dense = [{}, {"a_namespace": [5.0, 0.0]}, {"a_namespace": [6.0, 0.0]}]
+    featurized = base.embed(
+        [str1, base.Embed(str2), base.Embed(str3)], MockEncoder(), "a_namespace"
     )
-    expected_embed_and_keep = [
-        {"a_namespace": str1},
-        {"a_namespace": str2 + " " + encoded_str2},
-        {"a_namespace": str3 + " " + encoded_str3},
-    ]
-    assert (
-        base.embed(
-            [str1, base.EmbedAndKeep(str2), base.EmbedAndKeep(str3)],
-            MockEncoder(),
-            "a_namespace",
-        )
-        == expected_embed_and_keep
+    for i in range(len(featurized)):
+        assert featurized[i].sparse == expected_sparse[i]
+        assert featurized[i].dense == expected_dense[i]
+
+    featurized = base.embed(
+        [str1, base.EmbedAndKeep(str2), base.EmbedAndKeep(str3)],
+        MockEncoder(),
+        "a_namespace",
     )
+    expected_sparse = [
+        {"a_namespace": {"default_ft": str1}},
+        {"a_namespace": {"default_ft": str2}},
+        {"a_namespace": {"default_ft": str3}},
+    ]
+    for i in range(len(featurized)):
+        assert featurized[i].sparse == expected_sparse[i]
+        assert featurized[i].dense == expected_dense[i]
 
 
 def test_action_w_namespace_no_emb() -> None:
     str1 = "test1"
     str2 = "test2"
     str3 = "test3"
-    expected = [
-        {"test_namespace": str1},
-        {"test_namespace": str2},
-        {"test_namespace": str3},
+    expected_sparse = [
+        {"test_namespace": {"default_ft": str1}},
+        {"test_namespace": {"default_ft": str2}},
+        {"test_namespace": {"default_ft": str3}},
     ]
-    assert (
-        base.embed(
-            [
-                {"test_namespace": str1},
-                {"test_namespace": str2},
-                {"test_namespace": str3},
-            ],
-            MockEncoder(),
-        )
-        == expected
+
+    featurized = base.embed(
+        [
+            {"test_namespace": str1},
+            {"test_namespace": str2},
+            {"test_namespace": str3},
+        ],
+        MockEncoder(),
     )
+    for i in range(len(featurized)):
+        assert featurized[i].sparse == expected_sparse[i]
+        assert featurized[i].dense == {}
 
 
 def test_action_w_namespace_w_emb() -> None:
-    str1 = "test1"
-    str2 = "test2"
-    str3 = "test3"
-    encoded_str1 = base._stringify_embedding(list(encoded_keyword + str1))
-    encoded_str2 = base._stringify_embedding(list(encoded_keyword + str2))
-    encoded_str3 = base._stringify_embedding(list(encoded_keyword + str3))
-    expected = [
-        {"test_namespace": encoded_str1},
-        {"test_namespace": encoded_str2},
-        {"test_namespace": encoded_str3},
+    str1 = "test"
+    str2 = "test_"
+    str3 = "test__"
+    expected_sparse = [
+        {"test_namespace": {"default_ft": str1}},
+        {"test_namespace": {"default_ft": str2}},
+        {"test_namespace": {"default_ft": str3}},
     ]
-    assert (
-        base.embed(
-            [
-                {"test_namespace": base.Embed(str1)},
-                {"test_namespace": base.Embed(str2)},
-                {"test_namespace": base.Embed(str3)},
-            ],
-            MockEncoder(),
-        )
-        == expected
-    )
-    expected_embed_and_keep = [
-        {"test_namespace": str1 + " " + encoded_str1},
-        {"test_namespace": str2 + " " + encoded_str2},
-        {"test_namespace": str3 + " " + encoded_str3},
+    expected_dense = [
+        {"test_namespace": [4.0, 0.0]},
+        {"test_namespace": [5.0, 0.0]},
+        {"test_namespace": [6.0, 0.0]},
     ]
-    assert (
-        base.embed(
-            [
-                {"test_namespace": base.EmbedAndKeep(str1)},
-                {"test_namespace": base.EmbedAndKeep(str2)},
-                {"test_namespace": base.EmbedAndKeep(str3)},
-            ],
-            MockEncoder(),
-        )
-        == expected_embed_and_keep
+
+    featurized = base.embed(
+        [
+            {"test_namespace": base.Embed(str1)},
+            {"test_namespace": base.Embed(str2)},
+            {"test_namespace": base.Embed(str3)},
+        ],
+        MockEncoder(),
     )
+    for i in range(len(featurized)):
+        assert featurized[i].sparse == {}
+        assert featurized[i].dense == expected_dense[i]
+
+    featurized = base.embed(
+        [
+            {"test_namespace": base.EmbedAndKeep(str1)},
+            {"test_namespace": base.EmbedAndKeep(str2)},
+            {"test_namespace": base.EmbedAndKeep(str3)},
+        ],
+        MockEncoder(),
+    )
+    for i in range(len(featurized)):
+        assert featurized[i].sparse == expected_sparse[i]
+        assert featurized[i].dense == expected_dense[i]
 
 
 def test_action_w_namespace_w_emb2() -> None:
-    str1 = "test1"
-    str2 = "test2"
-    str3 = "test3"
-    encoded_str1 = base._stringify_embedding(list(encoded_keyword + str1))
-    encoded_str2 = base._stringify_embedding(list(encoded_keyword + str2))
-    encoded_str3 = base._stringify_embedding(list(encoded_keyword + str3))
-    expected = [
-        {"test_namespace1": encoded_str1},
-        {"test_namespace2": encoded_str2},
-        {"test_namespace3": encoded_str3},
+    str1 = "test"
+    str2 = "test_"
+    str3 = "test__"
+    expected_sparse = [
+        {"test_namespace1": {"default_ft": str1}},
+        {"test_namespace2": {"default_ft": str2}},
+        {"test_namespace3": {"default_ft": str3}},
     ]
-    assert (
-        base.embed(
-            base.Embed(
-                [
-                    {"test_namespace1": str1},
-                    {"test_namespace2": str2},
-                    {"test_namespace3": str3},
-                ]
-            ),
-            MockEncoder(),
-        )
-        == expected
-    )
-    expected_embed_and_keep = [
-        {"test_namespace1": str1 + " " + encoded_str1},
-        {"test_namespace2": str2 + " " + encoded_str2},
-        {"test_namespace3": str3 + " " + encoded_str3},
+    expected_dense = [
+        {"test_namespace1": [4.0, 0.0]},
+        {"test_namespace2": [5.0, 0.0]},
+        {"test_namespace3": [6.0, 0.0]},
     ]
-    assert (
-        base.embed(
-            base.EmbedAndKeep(
-                [
-                    {"test_namespace1": str1},
-                    {"test_namespace2": str2},
-                    {"test_namespace3": str3},
-                ]
-            ),
-            MockEncoder(),
-        )
-        == expected_embed_and_keep
+
+    featurized = base.embed(
+        base.Embed(
+            [
+                {"test_namespace1": str1},
+                {"test_namespace2": str2},
+                {"test_namespace3": str3},
+            ]
+        ),
+        MockEncoder(),
     )
+    for i in range(len(featurized)):
+        assert featurized[i].sparse == {}
+        assert featurized[i].dense == expected_dense[i]
+
+    featurized = base.embed(
+        base.EmbedAndKeep(
+            [
+                {"test_namespace1": str1},
+                {"test_namespace2": str2},
+                {"test_namespace3": str3},
+            ]
+        ),
+        MockEncoder(),
+    )
+    for i in range(len(featurized)):
+        assert featurized[i].sparse == expected_sparse[i]
+        assert featurized[i].dense == expected_dense[i]
 
 
 def test_action_w_namespace_w_some_emb() -> None:
-    str1 = "test1"
-    str2 = "test2"
-    str3 = "test3"
-    encoded_str2 = base._stringify_embedding(list(encoded_keyword + str2))
-    encoded_str3 = base._stringify_embedding(list(encoded_keyword + str3))
-    expected = [
-        {"test_namespace": str1},
-        {"test_namespace": encoded_str2},
-        {"test_namespace": encoded_str3},
+    str1 = "test"
+    str2 = "test_"
+    str3 = "test__"
+    expected_sparse = [
+        {"test_namespace": {"default_ft": str1}},
+        {},
+        {},
     ]
-    assert (
-        base.embed(
-            [
-                {"test_namespace": str1},
-                {"test_namespace": base.Embed(str2)},
-                {"test_namespace": base.Embed(str3)},
-            ],
-            MockEncoder(),
-        )
-        == expected
-    )
-    expected_embed_and_keep = [
-        {"test_namespace": str1},
-        {"test_namespace": str2 + " " + encoded_str2},
-        {"test_namespace": str3 + " " + encoded_str3},
+    expected_dense = [
+        {},
+        {"test_namespace": [5.0, 0.0]},
+        {"test_namespace": [6.0, 0.0]},
     ]
-    assert (
-        base.embed(
-            [
-                {"test_namespace": str1},
-                {"test_namespace": base.EmbedAndKeep(str2)},
-                {"test_namespace": base.EmbedAndKeep(str3)},
-            ],
-            MockEncoder(),
-        )
-        == expected_embed_and_keep
+
+    featurized = base.embed(
+        [
+            {"test_namespace": str1},
+            {"test_namespace": base.Embed(str2)},
+            {"test_namespace": base.Embed(str3)},
+        ],
+        MockEncoder(),
     )
+    for i in range(len(featurized)):
+        assert featurized[i].sparse == expected_sparse[i]
+        assert featurized[i].dense == expected_dense[i]
+
+    expected_sparse = [
+        {"test_namespace": {"default_ft": str1}},
+        {"test_namespace": {"default_ft": str2}},
+        {"test_namespace": {"default_ft": str3}},
+    ]
+    featurized = base.embed(
+        [
+            {"test_namespace": str1},
+            {"test_namespace": base.EmbedAndKeep(str2)},
+            {"test_namespace": base.EmbedAndKeep(str3)},
+        ],
+        MockEncoder(),
+    )
+    for i in range(len(featurized)):
+        assert featurized[i].sparse == expected_sparse[i]
+        assert featurized[i].dense == expected_dense[i]
 
 
 def test_action_w_namespace_w_emb_w_more_than_one_item_in_first_dict() -> None:
-    str1 = "test1"
-    str2 = "test2"
-    str3 = "test3"
-    encoded_str1 = base._stringify_embedding(list(encoded_keyword + str1))
-    encoded_str2 = base._stringify_embedding(list(encoded_keyword + str2))
-    encoded_str3 = base._stringify_embedding(list(encoded_keyword + str3))
-    expected = [
-        {"test_namespace": encoded_str1, "test_namespace2": str1},
-        {"test_namespace": encoded_str2, "test_namespace2": str2},
-        {"test_namespace": encoded_str3, "test_namespace2": str3},
+    str1 = "test"
+    str2 = "test_"
+    str3 = "test__"
+    expected_sparse = [
+        {"test_namespace2": {"default_ft": str1}},
+        {"test_namespace2": {"default_ft": str2}},
+        {"test_namespace2": {"default_ft": str3}},
     ]
-    assert (
-        base.embed(
-            [
-                {"test_namespace": base.Embed(str1), "test_namespace2": str1},
-                {"test_namespace": base.Embed(str2), "test_namespace2": str2},
-                {"test_namespace": base.Embed(str3), "test_namespace2": str3},
-            ],
-            MockEncoder(),
-        )
-        == expected
-    )
-    expected_embed_and_keep = [
-        {"test_namespace": str1 + " " + encoded_str1, "test_namespace2": str1},
-        {"test_namespace": str2 + " " + encoded_str2, "test_namespace2": str2},
-        {"test_namespace": str3 + " " + encoded_str3, "test_namespace2": str3},
+    expected_dense = [
+        {"test_namespace": [4.0, 0.0]},
+        {"test_namespace": [5.0, 0.0]},
+        {"test_namespace": [6.0, 0.0]},
     ]
-    assert (
-        base.embed(
-            [
-                {"test_namespace": base.EmbedAndKeep(str1), "test_namespace2": str1},
-                {"test_namespace": base.EmbedAndKeep(str2), "test_namespace2": str2},
-                {"test_namespace": base.EmbedAndKeep(str3), "test_namespace2": str3},
-            ],
-            MockEncoder(),
-        )
-        == expected_embed_and_keep
+
+    featurized = base.embed(
+        [
+            {"test_namespace": base.Embed(str1), "test_namespace2": str1},
+            {"test_namespace": base.Embed(str2), "test_namespace2": str2},
+            {"test_namespace": base.Embed(str3), "test_namespace2": str3},
+        ],
+        MockEncoder(),
     )
+    for i in range(len(featurized)):
+        assert featurized[i].sparse == expected_sparse[i]
+        assert featurized[i].dense == expected_dense[i]
+
+    expected_sparse = [
+        {
+            "test_namespace": {"default_ft": str1},
+            "test_namespace2": {"default_ft": str1},
+        },
+        {
+            "test_namespace": {"default_ft": str2},
+            "test_namespace2": {"default_ft": str2},
+        },
+        {
+            "test_namespace": {"default_ft": str3},
+            "test_namespace2": {"default_ft": str3},
+        },
+    ]
+    featurized = base.embed(
+        [
+            {"test_namespace": base.EmbedAndKeep(str1), "test_namespace2": str1},
+            {"test_namespace": base.EmbedAndKeep(str2), "test_namespace2": str2},
+            {"test_namespace": base.EmbedAndKeep(str3), "test_namespace2": str3},
+        ],
+        MockEncoder(),
+    )
+    for i in range(len(featurized)):
+        assert featurized[i].sparse == expected_sparse[i]
+        assert featurized[i].dense == expected_dense[i]
 
 
 def test_one_namespace_w_list_of_features_no_emb() -> None:
     str1 = "test1"
     str2 = "test2"
-    expected = [{"test_namespace": [str1, str2]}]
-    assert base.embed({"test_namespace": [str1, str2]}, MockEncoder()) == expected
+    expected_sparse = {
+        "test_namespace_0": {"default_ft": str1},
+        "test_namespace_1": {"default_ft": str2},
+    }
+
+    featurized = base.embed({"test_namespace": [str1, str2]}, MockEncoder())
+    assert featurized.sparse == expected_sparse
+    assert featurized.dense == {}
 
 
 def test_one_namespace_w_list_of_features_w_some_emb() -> None:
-    str1 = "test1"
-    str2 = "test2"
-    encoded_str2 = base._stringify_embedding(list(encoded_keyword + str2))
-    expected = [{"test_namespace": [str1, encoded_str2]}]
-    assert (
-        base.embed({"test_namespace": [str1, base.Embed(str2)]}, MockEncoder())
-        == expected
-    )
+    str1 = "test"
+    str2 = "test_"
+    expected_sparse = {"test_namespace_0": {"default_ft": str1}}
+    expected_dense = {"test_namespace_1": [5.0, 0.0]}
+
+    featurized = base.embed({"test_namespace": [str1, base.Embed(str2)]}, MockEncoder())
+    assert featurized.sparse == expected_sparse
+    assert featurized.dense == expected_dense
 
 
 def test_nested_list_features_throws() -> None:
