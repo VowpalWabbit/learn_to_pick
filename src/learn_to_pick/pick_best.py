@@ -134,7 +134,9 @@ class PickBestFeaturizer(base.Featurizer[PickBestEvent]):
         for a in actions:
             a["#"] = PickBestFeaturizer._generic_namespace(a)
 
-    def get_context_actions(self, event) -> Tuple[base.Featurized, List[base.Featurized]]:
+    def get_context_actions(
+        self, event
+    ) -> Tuple[base.Featurized, List[base.Featurized]]:
         context = base.embed(event.based_on or {}, self.model)
         to_select_from_var_name, to_select_from = next(
             iter(event.to_select_from.items()), (None, None)
