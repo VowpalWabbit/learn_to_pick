@@ -47,7 +47,7 @@ class PyTorchPolicy(base.Policy[PickBestEvent]):
                 r.append((index, 0))
         # print(f"returning: {r}")
         return r
-        return [(index, val) for index, val in enumerate(p[0].tolist())]
+
 
     def learn(self, event):
         R, X, A = self.feature_embedder.format(event)
