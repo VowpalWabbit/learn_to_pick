@@ -53,29 +53,32 @@ def ToSelectFrom(anything: Any) -> _Roled:
         raise ValueError("ToSelectFrom must be a list to select from")
     return _Roled(anything, Role.ACTIONS)
 
-
-class _Embed:
-    def __init__(self, value: Any, keep: bool = False):
+class _Featurize:
+    def __init__(self, value: Any, keep: bool = True, embed: bool = False):
         self.value = value
         self.keep = keep
+        self.embed = embed
 
     def __str__(self) -> str:
         return str(self.value)
+    
+    @staticmethod
+    def create(value: Any, *args, **kwargs):
+        if isinstance(value, _Roled):
+            return _Roled(_Featurize.create(value.value, *args, **kwargs), value.role)
+        if isinstance(value, list):
+            return [_Featurize.create(v, *args, **kwargs) for v in value]
+        if isinstance(value, dict):
+            return {k: _Featurize.create(v, *args, **kwargs) for k, v in value.items()} 
+        if isinstance(value, _Featurize):        # should we swap? it will allow overwriting
+            return value        
+        return _Featurize(value, *args, **kwargs)
 
     __repr__ = __str__
 
 
 def Embed(anything: Any, keep: bool = False) -> Any:
-    if isinstance(anything, _Roled):
-        return _Roled(Embed(anything.value, keep=keep), anything.role)
-    if isinstance(anything, list):
-        return [Embed(v, keep=keep) for v in anything]
-    elif isinstance(anything, dict):
-        return {k: Embed(v, keep=keep) for k, v in anything.items()}
-    elif isinstance(anything, _Embed):
-        return anything
-    return _Embed(anything, keep=keep)
-
+    return _Featurize.create(anything, keep=keep, embed=True)
 
 def EmbedAndKeep(anything: Any) -> Any:
     return Embed(anything, keep=True)
@@ -463,14 +466,15 @@ class RLLoop(Generic[TEvent]):
 
 
 def _embed_string_type(
-    item: Union[str, _Embed], model: Any, namespace: str
+    item: Union[str, _Featurize], model: Any, namespace: str
 ) -> Featurized:
     """Helper function to embed a string or an _Embed object."""
     import re
 
     result = Featurized()
-    if isinstance(item, _Embed):
-        result[namespace] = DenseFeatures(model.encode(item.value))
+    if isinstance(item, _Featurize):
+        if item.embed:
+            result[namespace] = DenseFeatures(model.encode(item.value))
         if item.keep:
             keep_str = item.value.replace(" ", "_")
             result[namespace] = {"default_ft": re.sub(r"[\t\n\r\f\v]+", " ", keep_str)}
@@ -512,7 +516,7 @@ def _embed_list_type(
 
 
 def embed(
-    to_embed: Union[Union[str, _Embed], Dict, List[Union[str, _Embed]], List[Dict]],
+    to_embed: Union[Union[str, _Featurize], Dict, List[Union[str, _Featurize]], List[Dict]],
     model: Any,
     namespace: Optional[str] = None,
 ) -> Union[Featurized, List[Featurized]]:
@@ -526,7 +530,7 @@ def embed(
     Returns:
         List[Dict[str, str]]: A list of dictionaries where each dictionary has the namespace as the key and the embedded string as the value
     """
-    if (isinstance(to_embed, _Embed) and isinstance(to_embed.value, str)) or isinstance(
+    if (isinstance(to_embed, _Featurize) and isinstance(to_embed.value, str)) or isinstance(
         to_embed, str
     ):
         return _embed_string_type(to_embed, model, namespace)
