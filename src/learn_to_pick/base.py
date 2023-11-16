@@ -20,6 +20,7 @@ from learn_to_pick.metrics import MetricsTrackerAverage, MetricsTrackerRollingWi
 from learn_to_pick.model_repository import ModelRepository
 from learn_to_pick.vw_logger import VwLogger
 from learn_to_pick.features import Featurized, DenseFeatures, SparseFeatures
+from enum import Enum
 
 if TYPE_CHECKING:
     import vowpal_wabbit_next as vw
@@ -27,34 +28,30 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class _BasedOn:
-    def __init__(self, value: Any):
+class Role(Enum):
+    CONTEXT = 1
+    ACTIONS = 2
+
+
+class _Roled:
+    def __init__(self, value: Any, role: Role):
         self.value = value
+        self.role = role
 
     def __str__(self) -> str:
         return str(self.value)
-
+    
     __repr__ = __str__
 
 
-def BasedOn(anything: Any) -> _BasedOn:
-    return _BasedOn(anything)
+def BasedOn(anything: Any) -> _Roled:
+    return _Roled(anything, Role.CONTEXT)
 
 
-class _ToSelectFrom:
-    def __init__(self, value: Any):
-        self.value = value
-
-    def __str__(self) -> str:
-        return str(self.value)
-
-    __repr__ = __str__
-
-
-def ToSelectFrom(anything: Any) -> _ToSelectFrom:
+def ToSelectFrom(anything: Any) -> _Roled:
     if not isinstance(anything, list):
         raise ValueError("ToSelectFrom must be a list to select from")
-    return _ToSelectFrom(anything)
+    return _Roled(anything, Role.ACTIONS)
 
 
 class _Embed:
@@ -69,10 +66,8 @@ class _Embed:
 
 
 def Embed(anything: Any, keep: bool = False) -> Any:
-    if isinstance(anything, _ToSelectFrom):
-        return ToSelectFrom(Embed(anything.value, keep=keep))
-    elif isinstance(anything, _BasedOn):
-        return BasedOn(Embed(anything.value, keep=keep))
+    if isinstance(anything, _Roled):
+        return _Roled(Embed(anything.value, keep=keep), anything.role)
     if isinstance(anything, list):
         return [Embed(v, keep=keep) for v in anything]
     elif isinstance(anything, dict):
@@ -93,20 +88,8 @@ def _parse_lines(parser: "vw.TextFormatParser", input_str: str) -> List["vw.Exam
     return [parser.parse_line(line) for line in input_str.split("\n")]
 
 
-def get_based_on(inputs: Dict[str, Any]) -> Dict:
-    return {
-        k: inputs[k].value if isinstance(inputs[k].value, list) else inputs[k].value
-        for k in inputs.keys()
-        if isinstance(inputs[k], _BasedOn)
-    }
-
-
-def get_to_select_from(inputs: Dict[str, Any]) -> Dict:
-    return {
-        k: inputs[k].value
-        for k in inputs.keys()
-        if isinstance(inputs[k], _ToSelectFrom)
-    }
+def filter_inputs(inputs: Dict[str, Any], role: Role) -> Dict[str, Any]:
+    return {k: v.value for k, v in inputs.items() if isinstance(v, _Roled) and v.role == role}
 
 
 # end helper functions
