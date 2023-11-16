@@ -470,8 +470,7 @@ class RLLoop(Generic[TEvent]):
                 )
         except Exception as e:
             logger.info(
-                f"The selection scorer was not able to score, \
-                and the chain was not able to adjust to this response, error: {e}"
+                f"The selection scorer was not able to score, and the chain was not able to adjust to this response, error: {e}"
             )
 
         event = self._call_after_scoring_before_learning(score=score, event=event)
