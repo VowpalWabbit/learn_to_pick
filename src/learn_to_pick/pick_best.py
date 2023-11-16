@@ -223,24 +223,20 @@ class PickBest(base.RLLoop[PickBestEvent]):
     """
 
     def _call_before_predict(self, inputs: Dict[str, Any]) -> PickBestEvent:
-        context, actions = base.get_based_on_and_to_select_from(inputs=inputs)
-        if not actions:
+        to_select_from = base.get_to_select_from(inputs)
+        if not to_select_from:
             raise ValueError(
                 "No variables using 'ToSelectFrom' found in the inputs. Please include at least one variable containing a list to select from."
             )
-
-        if len(list(actions.values())) > 1:
+        if len(to_select_from) > 1:
             raise ValueError(
                 "Only one variable using 'ToSelectFrom' can be provided in the inputs for PickBest run() call. Please provide only one variable containing a list to select from."
             )
-
-        if not context:
-            raise ValueError(
-                "No variables using 'BasedOn' found in the inputs. Please include at least one variable containing information to base the selected of ToSelectFrom on."
-            )
-
-        event = PickBestEvent(inputs=inputs, to_select_from=actions, based_on=context)
-        return event
+        return PickBestEvent(
+            inputs=inputs,
+            to_select_from=to_select_from,
+            based_on=base.get_based_on(inputs),
+        )
 
     def _call_after_predict_before_scoring(
         self,

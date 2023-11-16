@@ -93,25 +93,20 @@ def _parse_lines(parser: "vw.TextFormatParser", input_str: str) -> List["vw.Exam
     return [parser.parse_line(line) for line in input_str.split("\n")]
 
 
-def get_based_on_and_to_select_from(inputs: Dict[str, Any]) -> Tuple[Dict, Dict]:
-    to_select_from = {
-        k: inputs[k].value
-        for k in inputs.keys()
-        if isinstance(inputs[k], _ToSelectFrom)
-    }
-
-    if not to_select_from:
-        raise ValueError(
-            "No variables using 'ToSelectFrom' found in the inputs. Please include at least one variable containing a list to select from."
-        )
-
-    based_on = {
+def get_based_on(inputs: Dict[str, Any]) -> Dict:
+    return {
         k: inputs[k].value if isinstance(inputs[k].value, list) else inputs[k].value
         for k in inputs.keys()
         if isinstance(inputs[k], _BasedOn)
     }
 
-    return based_on, to_select_from
+
+def get_to_select_from(inputs: Dict[str, Any]) -> Dict:
+    return {
+        k: inputs[k].value
+        for k in inputs.keys()
+        if isinstance(inputs[k], _ToSelectFrom)
+    }
 
 
 # end helper functions

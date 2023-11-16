@@ -36,7 +36,7 @@ def test_multiple_ToSelectFrom_throws() -> None:
         )
 
 
-def test_missing_basedOn_from_throws() -> None:
+def test_missing_basedOn_from_dont_throw() -> None:
     pick = learn_to_pick.PickBest.create(
         llm=fake_llm_caller,
         featurizer=learn_to_pick.PickBestFeaturizer(
@@ -44,8 +44,7 @@ def test_missing_basedOn_from_throws() -> None:
         ),
     )
     actions = ["0", "1", "2"]
-    with pytest.raises(ValueError):
-        pick.run(action=learn_to_pick.ToSelectFrom(actions))
+    pick.run(action=learn_to_pick.ToSelectFrom(actions))
 
 
 def test_ToSelectFrom_not_a_list_throws() -> None:
