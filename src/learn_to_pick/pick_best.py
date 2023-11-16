@@ -77,9 +77,9 @@ class VwTxt:
         def _to_str(v):
             import numbers
 
-            return v if isinstance(v, numbers.Number) else f"={v}"
+            return f":{v}" if isinstance(v, numbers.Number) else f"={v}"
 
-        return " ".join([f"{k}:{_to_str(v)}" for k, v in values.items()])
+        return " ".join([f"{k}{_to_str(v)}" for k, v in values.items()])
 
     @staticmethod
     def featurized_2_str(obj: base.Featurized) -> str:
