@@ -140,7 +140,7 @@ class PickBestFeaturizer(base.Featurizer[PickBestEvent]):
         for a in actions:
             a["#"] = PickBestFeaturizer._generic_namespace(a)
 
-    def get_context_actions(
+    def get_context_and_actions(
         self, event
     ) -> Tuple[base.Featurized, List[base.Featurized]]:
         context = base.embed(event.based_on or {}, self.model)
@@ -162,7 +162,7 @@ class PickBestFeaturizer(base.Featurizer[PickBestEvent]):
     def featurize(
         self, event: PickBestEvent
     ) -> Tuple[base.Featurized, List[base.Featurized], PickBestSelected]:
-        context, actions = self.get_context_actions(event)
+        context, actions = self.get_context_and_actions(event)
 
         if self.auto_embed:
             self._dotproducts(context, actions)
