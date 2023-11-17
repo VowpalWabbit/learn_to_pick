@@ -32,7 +32,7 @@ class CustomSelectionScorer(learn_to_pick.SelectionScorer):
         chosen_article = picked["article"]
         user = event.based_on["user"]
         time_of_day = event.based_on["time_of_day"]
-        score = self.get_score(user[0], time_of_day[0], chosen_article)
+        score = self.get_score(user, time_of_day, chosen_article)
         return score
 
 
