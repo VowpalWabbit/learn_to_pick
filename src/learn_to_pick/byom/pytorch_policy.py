@@ -48,7 +48,6 @@ class PyTorchPolicy(base.Policy[PickBestEvent]):
         # print(f"returning: {r}")
         return r
 
-
     def learn(self, event):
         R, X, A = self.feature_embedder.format(event)
         # print(f"R: {R}")
