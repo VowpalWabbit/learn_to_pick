@@ -36,7 +36,7 @@ def test_multiple_ToSelectFrom_throws() -> None:
         )
 
 
-def test_missing_basedOn_from_throws() -> None:
+def test_missing_basedOn_from_dont_throw() -> None:
     pick = learn_to_pick.PickBest.create(
         llm=fake_llm_caller,
         featurizer=learn_to_pick.PickBestFeaturizer(
@@ -44,8 +44,7 @@ def test_missing_basedOn_from_throws() -> None:
         ),
     )
     actions = ["0", "1", "2"]
-    with pytest.raises(ValueError):
-        pick.run(action=learn_to_pick.ToSelectFrom(actions))
+    pick.run(action=learn_to_pick.ToSelectFrom(actions))
 
 
 def test_ToSelectFrom_not_a_list_throws() -> None:
@@ -169,10 +168,10 @@ def test_everything_embedded() -> None:
 
     expected = "\n".join(
         [
-            f"shared |User_dense {encoded_ctx_str_1} |User_sparse default_ft:={ctx_str_1}",
-            f"|action_dense {action_dense} |action_sparse default_ft:={str1}",
-            f"|action_dense {action_dense} |action_sparse default_ft:={str2}",
-            f"|action_dense {action_dense} |action_sparse default_ft:={str3}",
+            f"shared |User_dense {encoded_ctx_str_1} |User_sparse default_ft={ctx_str_1}",
+            f"|action_dense {action_dense} |action_sparse default_ft={str1}",
+            f"|action_dense {action_dense} |action_sparse default_ft={str2}",
+            f"|action_dense {action_dense} |action_sparse default_ft={str3}",
         ]
     )  # noqa
 
@@ -198,10 +197,10 @@ def test_default_auto_embedder_is_off() -> None:
 
     expected = "\n".join(
         [
-            f"shared |User_sparse default_ft:={ctx_str_1}",
-            f"|action_sparse default_ft:={str1}",
-            f"|action_sparse default_ft:={str2}",
-            f"|action_sparse default_ft:={str3}",
+            f"shared |User_sparse default_ft={ctx_str_1}",
+            f"|action_sparse default_ft={str1}",
+            f"|action_sparse default_ft={str2}",
+            f"|action_sparse default_ft={str3}",
         ]
     )  # noqa
 
@@ -227,10 +226,10 @@ def test_default_w_embeddings_off() -> None:
 
     expected = "\n".join(
         [
-            f"shared |User_sparse default_ft:={ctx_str_1}",
-            f"|action_sparse default_ft:={str1}",
-            f"|action_sparse default_ft:={str2}",
-            f"|action_sparse default_ft:={str3}",
+            f"shared |User_sparse default_ft={ctx_str_1}",
+            f"|action_sparse default_ft={str1}",
+            f"|action_sparse default_ft={str2}",
+            f"|action_sparse default_ft={str3}",
         ]
     )  # noqa
 
@@ -258,9 +257,9 @@ def test_default_w_embeddings_on() -> None:
 
     expected = "\n".join(
         [
-            f"shared |User_sparse default_ft:={ctx_str_1} |@_sparse User:={ctx_str_1}",
-            f"|action_sparse default_ft:={str1} |{dot_prod} |#_sparse action:={str1} ",
-            f"|action_sparse default_ft:={str2} |{dot_prod} |#_sparse action:={str2} ",
+            f"shared |User_sparse default_ft={ctx_str_1} |@_sparse User={ctx_str_1}",
+            f"|action_sparse default_ft={str1} |{dot_prod} |#_sparse action={str1} ",
+            f"|action_sparse default_ft={str2} |{dot_prod} |#_sparse action={str2} ",
         ]
     )  # noqa
 

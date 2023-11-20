@@ -35,36 +35,19 @@ class PickBestEvent(base.Event[PickBestSelected]):
     def __init__(
         self,
         inputs: Dict[str, Any],
-        to_select_from: Dict[str, Any],
-        based_on: Dict[str, Any],
         selected: Optional[PickBestSelected] = None,
     ):
         super().__init__(inputs=inputs, selected=selected or PickBestSelected())
-        self.to_select_from = to_select_from
-        self.based_on = based_on
-
-    def context(self, model) -> base.Featurized:
-        return base.embed(self.based_on or {}, model)
-
-    def actions(self, model) -> List[base.Featurized]:
-        to_select_from_var_name, to_select_from = next(
-            iter(self.to_select_from.items()), (None, None)
-        )
-
-        action_embs = (
-            (
-                base.embed(to_select_from, model, to_select_from_var_name)
-                if self.to_select_from
-                else None
-            )
-            if to_select_from
-            else None
-        )
-        if not action_embs:
+        self.to_select_from = base.filter_inputs(inputs, base.Role.ACTIONS)
+        self.based_on = base.filter_inputs(inputs, base.Role.CONTEXT)
+        if not self.to_select_from:
             raise ValueError(
-                "Context and to_select_from must be provided in the inputs dictionary"
+                "No variables using 'ToSelectFrom' found in the inputs. Please include at least one variable containing a list to select from."
             )
-        return action_embs
+        if len(self.to_select_from) > 1:
+            raise ValueError(
+                "Only one variable using 'ToSelectFrom' can be provided in the inputs for PickBest run() call. Please provide only one variable containing a list to select from."
+            )
 
 
 class VwTxt:
@@ -77,9 +60,9 @@ class VwTxt:
         def _to_str(v):
             import numbers
 
-            return v if isinstance(v, numbers.Number) else f"={v}"
+            return f":{v}" if isinstance(v, numbers.Number) else f"={v}"
 
-        return " ".join([f"{k}:{_to_str(v)}" for k, v in values.items()])
+        return " ".join([f"{k}{_to_str(v)}" for k, v in values.items()])
 
     @staticmethod
     def featurized_2_str(obj: base.Featurized) -> str:
@@ -157,11 +140,29 @@ class PickBestFeaturizer(base.Featurizer[PickBestEvent]):
         for a in actions:
             a["#"] = PickBestFeaturizer._generic_namespace(a)
 
+    def get_context_and_actions(
+        self, event
+    ) -> Tuple[base.Featurized, List[base.Featurized]]:
+        context = base.embed(event.based_on or {}, self.model)
+        to_select_from_var_name, to_select_from = next(
+            iter(event.to_select_from.items()), (None, None)
+        )
+
+        actions = (
+            (
+                base.embed(to_select_from, self.model, to_select_from_var_name)
+                if event.to_select_from
+                else None
+            )
+            if to_select_from
+            else None
+        )
+        return context, actions
+
     def featurize(
         self, event: PickBestEvent
     ) -> Tuple[base.Featurized, List[base.Featurized], PickBestSelected]:
-        context = event.context(self.model)
-        actions = event.actions(self.model)
+        context, actions = self.get_context_and_actions(event)
 
         if self.auto_embed:
             self._dotproducts(context, actions)
@@ -224,24 +225,7 @@ class PickBest(base.RLLoop[PickBestEvent]):
     """
 
     def _call_before_predict(self, inputs: Dict[str, Any]) -> PickBestEvent:
-        context, actions = base.get_based_on_and_to_select_from(inputs=inputs)
-        if not actions:
-            raise ValueError(
-                "No variables using 'ToSelectFrom' found in the inputs. Please include at least one variable containing a list to select from."
-            )
-
-        if len(list(actions.values())) > 1:
-            raise ValueError(
-                "Only one variable using 'ToSelectFrom' can be provided in the inputs for PickBest run() call. Please provide only one variable containing a list to select from."
-            )
-
-        if not context:
-            raise ValueError(
-                "No variables using 'BasedOn' found in the inputs. Please include at least one variable containing information to base the selected of ToSelectFrom on."
-            )
-
-        event = PickBestEvent(inputs=inputs, to_select_from=actions, based_on=context)
-        return event
+        return PickBestEvent(inputs=inputs)
 
     def _call_after_predict_before_scoring(
         self,
