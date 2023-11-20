@@ -40,7 +40,7 @@ class _Roled:
 
     def __str__(self) -> str:
         return str(self.value)
-    
+
     __repr__ = __str__
 
 
@@ -53,6 +53,7 @@ def ToSelectFrom(anything: Any) -> _Roled:
         raise ValueError("ToSelectFrom must be a list to select from")
     return _Roled(anything, Role.ACTIONS)
 
+
 class _Input:
     def __init__(self, value: Any, keep: bool = True, embed: bool = False):
         self.value = value
@@ -61,7 +62,7 @@ class _Input:
 
     def __str__(self) -> str:
         return str(self.value)
-    
+
     @staticmethod
     def create(value: Any, *args, **kwargs):
         if isinstance(value, _Roled):
@@ -69,9 +70,9 @@ class _Input:
         if isinstance(value, list):
             return [_Input.create(v, *args, **kwargs) for v in value]
         if isinstance(value, dict):
-            return {k: _Input.create(v, *args, **kwargs) for k, v in value.items()} 
-        if isinstance(value, _Input):        # should we swap? it will allow overwriting
-            return value        
+            return {k: _Input.create(v, *args, **kwargs) for k, v in value.items()}
+        if isinstance(value, _Input):  # should we swap? it will allow overwriting
+            return value
         return _Input(value, *args, **kwargs)
 
     __repr__ = __str__
@@ -79,6 +80,7 @@ class _Input:
 
 def Embed(anything: Any, keep: bool = False) -> Any:
     return _Input.create(anything, keep=keep, embed=True)
+
 
 def EmbedAndKeep(anything: Any) -> Any:
     return Embed(anything, keep=True)
@@ -92,7 +94,11 @@ def _parse_lines(parser: "vw.TextFormatParser", input_str: str) -> List["vw.Exam
 
 
 def filter_inputs(inputs: Dict[str, Any], role: Role) -> Dict[str, Any]:
-    return {k: v.value for k, v in inputs.items() if isinstance(v, _Roled) and v.role == role}
+    return {
+        k: v.value
+        for k, v in inputs.items()
+        if isinstance(v, _Roled) and v.role == role
+    }
 
 
 # end helper functions
