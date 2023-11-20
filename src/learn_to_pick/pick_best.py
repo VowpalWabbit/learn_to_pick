@@ -38,8 +38,8 @@ class PickBestEvent(base.Event[PickBestSelected]):
         selected: Optional[PickBestSelected] = None,
     ):
         super().__init__(inputs=inputs, selected=selected or PickBestSelected())
-        self.to_select_from = base.get_to_select_from(inputs)
-        self.based_on = base.get_based_on(inputs)
+        self.to_select_from = base.filter_inputs(inputs, base.Role.ACTIONS)
+        self.based_on = base.filter_inputs(inputs, base.Role.CONTEXT)
         if not self.to_select_from:
             raise ValueError(
                 "No variables using 'ToSelectFrom' found in the inputs. Please include at least one variable containing a list to select from."
