@@ -59,5 +59,5 @@ __all__ = [
     "embed",
     "ModelRepository",
     "VwPolicy",
-    "VwLogger"
+    "VwLogger",
 ]

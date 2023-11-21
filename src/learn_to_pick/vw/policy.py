@@ -1,17 +1,12 @@
 from learn_to_pick.base import Event, Featurizer, Policy
 from learn_to_pick import ModelRepository, VwLogger
-from typing import (
-    Any,
-    List,
-    Callable,
-    TYPE_CHECKING,
-    TypeVar
-)
+from typing import Any, List, Callable, TYPE_CHECKING, TypeVar
 
 if TYPE_CHECKING:
     import vowpal_wabbit_next as vw
 
 TEvent = TypeVar("TEvent", bound=Event)
+
 
 def _parse_lines(parser: "vw.TextFormatParser", input_str: str) -> List["vw.Example"]:
     return [parser.parse_line(line) for line in input_str.split("\n")]
