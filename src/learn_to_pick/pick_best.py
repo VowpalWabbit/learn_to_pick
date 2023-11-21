@@ -6,7 +6,11 @@ from itertools import chain
 import os
 import numpy as np
 
-from learn_to_pick import base, VwPolicy, ModelRepository, VwLogger
+from learn_to_pick import base
+from learn_to_pick.vw.policy import VwPolicy
+from learn_to_pick.vw.model_repository import ModelRepository
+from learn_to_pick.vw.logger import VwLogger
+
 
 logger = logging.getLogger(__name__)
 

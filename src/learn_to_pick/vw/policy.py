@@ -1,5 +1,6 @@
 from learn_to_pick.base import Event, Featurizer, Policy
-from learn_to_pick import ModelRepository, VwLogger
+from learn_to_pick.vw.model_repository import ModelRepository
+from learn_to_pick.vw.logger import VwLogger
 from typing import Any, List, Callable, TYPE_CHECKING, TypeVar
 
 if TYPE_CHECKING:

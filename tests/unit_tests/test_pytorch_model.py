@@ -102,7 +102,7 @@ def test_save_load(remove_checkpoint):
     sim1 = Simulator()
     sim2 = Simulator()
 
-    fe = learn_to_pick.PyTorchFeatureEmbedder(auto_embed=True)
+    fe = learn_to_pick.PyTorchFeaturizer(auto_embed=True)
     first_model_path = f"{CHECKPOINT_DIR}/first.checkpoint"
 
     torch.manual_seed(0)
