@@ -6,7 +6,7 @@ from itertools import chain
 import os
 import numpy as np
 
-from learn_to_pick import base
+from learn_to_pick import base, VwPolicy, ModelRepository, VwLogger
 
 logger = logging.getLogger(__name__)
 
@@ -333,14 +333,14 @@ class PickBest(base.RLLoop[PickBestEvent]):
 
         vw_cmd = interactions + vw_cmd
 
-        return base.VwPolicy(
-            model_repo=base.ModelRepository(
+        return VwPolicy(
+            model_repo=ModelRepository(
                 model_save_dir, with_history=True, reset=reset_model
             ),
             vw_cmd=vw_cmd,
             featurizer=featurizer,
             formatter=formatter,
-            vw_logger=base.VwLogger(rl_logs),
+            vw_logger=VwLogger(rl_logs),
         )
 
     def _default_policy(self):

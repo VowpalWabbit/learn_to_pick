@@ -1,6 +1,6 @@
 from learn_to_pick import base, PickBestEvent
-from learn_to_pick.byom.logistic_regression import ResidualLogisticRegressor
-from learn_to_pick.byom.igw import SamplingIGW
+from learn_to_pick.pytorch.logistic_regression import ResidualLogisticRegressor
+from learn_to_pick.pytorch.igw import SamplingIGW
 import torch
 import os
 
