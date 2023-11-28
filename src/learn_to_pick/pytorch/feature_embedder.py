@@ -4,30 +4,24 @@ from learn_to_pick import PickBestFeaturizer
 
 
 class PyTorchFeatureEmbedder:
-    def __init__(self, auto_embed=False, model=None, *args, **kwargs):
+    def __init__(self, model=None, *args, **kwargs):
         if model is None:
             model = SentenceTransformer("all-MiniLM-L6-v2")
 
         self.model = model
-        self.featurizer = PickBestFeaturizer(auto_embed=auto_embed)
+        self.featurizer = PickBestFeaturizer(auto_embed=False)
 
     def encode(self, stuff):
         embeddings = self.model.encode(stuff, convert_to_tensor=True)
         normalized = torch.nn.functional.normalize(embeddings)
         return normalized
 
-    def convert_features_to_text(self, features):
-        def process_feature(feature):
-            if isinstance(feature, dict):
-                return " ".join(
-                    [f"{k}_{process_feature(v)}" for k, v in feature.items()]
-                )
-            elif isinstance(feature, list):
-                return " ".join([process_feature(elem) for elem in feature])
-            else:
-                return str(feature)
-
-        return process_feature(features)
+    def convert_features_to_text(self, sparse_features):
+        results = []
+        for ns, obj in sparse_features.items():
+            value = obj.get("default_ft", "")
+            results.append(f"{ns}={value}")
+        return " ".join(results)
 
     def format(self, event):
         # TODO: handle dense

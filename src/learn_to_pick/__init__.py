@@ -24,7 +24,7 @@ from learn_to_pick.vw.model_repository import ModelRepository
 from learn_to_pick.vw.logger import VwLogger
 
 from learn_to_pick.pytorch.policy import PyTorchPolicy
-from learn_to_pick.pytorch.featurizer import PyTorchFeaturizer
+from learn_to_pick.pytorch.feature_embedder import PyTorchFeatureEmbedder
 
 
 def configure_logger() -> None:
@@ -55,7 +55,7 @@ __all__ = [
     "Featurizer",
     "Policy",
     "PyTorchPolicy",
-    "PyTorchFeaturizer",
+    "PyTorchFeatureEmbedder",
     "embed",
     "ModelRepository",
     "VwPolicy",
