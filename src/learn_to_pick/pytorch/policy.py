@@ -4,7 +4,7 @@ from learn_to_pick.pytorch.igw import SamplingIGW
 from learn_to_pick.pytorch.feature_embedder import PyTorchFeatureEmbedder
 import torch
 import os
-from typing import Any, Optional, PathLike, TypeVar, Union
+from typing import Any, Optional, TypeVar, Union
 
 TEvent = TypeVar("TEvent", bound=base.Event)
 
@@ -55,7 +55,7 @@ class PyTorchPolicy(base.Policy[PickBestEvent]):
     def log(self, event):
         pass
 
-    def save(self, path: Optional[Union[str, PathLike]]) -> None:
+    def save(self, path: Optional[Union[str, os.PathLike]]) -> None:
         state = {
             "workspace_state_dict": self.workspace.state_dict(),
             "optimizer_state_dict": self.workspace.optim.state_dict(),
@@ -69,7 +69,7 @@ class PyTorchPolicy(base.Policy[PickBestEvent]):
             os.makedirs(dir, exist_ok=True)
         torch.save(state, path)
 
-    def load(self, path: Optional[Union[str, PathLike]]) -> None:
+    def load(self, path: Optional[Union[str, os.PathLike]]) -> None:
         import parameterfree
 
         if os.path.exists(path):

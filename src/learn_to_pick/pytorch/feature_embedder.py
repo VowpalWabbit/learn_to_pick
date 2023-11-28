@@ -39,13 +39,13 @@ class PyTorchFeatureEmbedder:
 
         if len(context_featurized.dense) > 0:
             raise NotImplementedError(
-                "pytorch policy doesn't support context with dense feature"
+                "pytorch policy doesn't support context with dense features"
             )
 
         for action_featurized in actions_featurized:
             if len(action_featurized.dense) > 0:
                 raise NotImplementedError(
-                    "pytorch policy doesn't support action with dense feature"
+                    "pytorch policy doesn't support action with dense features"
                 )
 
         context_sparse = self.encode(
