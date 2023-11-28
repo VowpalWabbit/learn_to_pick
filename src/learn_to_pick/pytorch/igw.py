@@ -1,7 +1,9 @@
 import torch
+from torch import Tensor
+from typing import Tuple
 
 
-def IGW(fhat, gamma):
+def IGW(fhat: torch.Tensor, gamma: float) -> Tuple[Tensor, Tensor]:
     from math import sqrt
 
     fhatahat, ahat = fhat.max(dim=1)
@@ -13,7 +15,7 @@ def IGW(fhat, gamma):
     return torch.multinomial(p, num_samples=1).squeeze(1), ahat
 
 
-def SamplingIGW(A, P, gamma):
+def SamplingIGW(A: Tensor, P: Tensor, gamma: float) -> list:
     exploreind, _ = IGW(P, gamma)
     explore = [ind for _, ind in zip(A, exploreind)]
     return explore
