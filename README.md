@@ -29,7 +29,7 @@ Note: all code examples presented here can be found in `notebooks/readme.ipynb`
 - Use a custom score function to grade the decision.
 - Directly specify the score manually and asynchronously.
 
-The beauty of `learn_to_pick` is its flexibility. Whether you're a fan of VowpalWabbit or prefer PyTorch (coming soon), the library can seamlessly integrate with both, allowing them to be the brain behind your decisions.
+The beauty of `learn_to_pick` is its flexibility. Whether you're a fan of VowpalWabbit or prefer PyTorch, the library can seamlessly integrate with both, allowing them to be the brain behind your decisions.
 
 ## Installation
 
@@ -42,6 +42,8 @@ The `PickBest` scenario should be used when:
 - Multiple options are available for a given scenario
 - Only one option is optimal for a specific criteria or context
 - There exists a mechanism to provide feedback on the suitability of the chosen option for the specific criteria
+
+### Scorer
 
 Example usage with llm default scorer:
 
@@ -113,7 +115,46 @@ dummy_score = 1
 picker.update_with_delayed_score(dummy_score, result)
 ```
 
-`PickBest` is highly configurable to work with a VowpalWabbit decision making policy, a PyTorch decision making policy (coming soon), or with a custom user defined decision making policy
+### Using Pytorch policy
+
+Example usage with a Pytorch policy:
+```python
+from learn_to_pick import PyTorchPolicy
+
+pytorch_picker = learn_to_pick.PickBest.create(
+    policy=PyTorchPolicy(), selection_scorer=CustomSelectionScorer())
+
+pytorch_picker.run(
+    pick = learn_to_pick.ToSelectFrom(["option1", "option2"]),
+    criteria = learn_to_pick.BasedOn("some criteria")
+)
+```
+
+Example usage with a custom Pytorch policy:
+You can alway create a custom Pytorch policy by implementing the Policy interface
+
+```python
+class CustomPytorchPolicy(Policy):
+    def __init__(self, **kwargs: Any):
+        ...
+
+    def predict(self, event: TEvent) -> Any:
+        ...
+
+    def learn(self, event: TEvent) -> None:
+        ...
+
+    def log(self, event: TEvent) -> None:
+        ...
+
+    def save(self) -> None:
+        ...
+
+pytorch_picker = learn_to_pick.PickBest.create(
+    policy=CustomPytorchPolicy(), selection_scorer=CustomSelectionScorer())
+```
+
+`PickBest` is highly configurable to work with a VowpalWabbit decision making policy, a PyTorch decision making policy, or with a custom user defined decision making policy
 
 The main thing that needs to be decided from the get-go is:
 
@@ -134,7 +175,8 @@ In all three cases, when a score is calculated or provided, the decision making 
 ## Example Notebooks
 
 - `readme.ipynb` showcases all examples shown in this README
-- `news_recommendation.ipynb` showcases a personalization scenario where we have to pick articles for specific users
+- `news_recommendation.ipynb` showcases a personalization scenario where we have to pick articles for specific users with VowpalWabbit policy
+- `news_recommendation_pytorch.ipynb` showcases the same personalization scenario where we have to pick articles for specific users with Pytorch policy
 - `prompt_variable_injection.ipynb` showcases learned prompt variable injection and registering callback functionality
 
 ### Advanced Usage
@@ -183,7 +225,7 @@ class CustomSelectionScorer(learn_to_pick.SelectionScorer):
         # inputs: the inputs to the picker in Dict[str, Any] format
         # picked: the selection that was made by the policy
         # event: metadata that can be used to determine the score if needed
-        
+
         # scoring logic goes here
 
         dummy_score = 1.0

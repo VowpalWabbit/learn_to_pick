@@ -5,12 +5,9 @@ from learn_to_pick.base import (
     BasedOn,
     Embed,
     Featurizer,
-    ModelRepository,
     Policy,
     SelectionScorer,
     ToSelectFrom,
-    VwPolicy,
-    VwLogger,
     embed,
 )
 from learn_to_pick.pick_best import (
@@ -20,6 +17,14 @@ from learn_to_pick.pick_best import (
     PickBestRandomPolicy,
     PickBestSelected,
 )
+
+
+from learn_to_pick.vw.policy import VwPolicy
+from learn_to_pick.vw.model_repository import ModelRepository
+from learn_to_pick.vw.logger import VwLogger
+
+from learn_to_pick.pytorch.policy import PyTorchPolicy
+from learn_to_pick.pytorch.feature_embedder import PyTorchFeatureEmbedder
 
 
 def configure_logger() -> None:
@@ -48,9 +53,11 @@ __all__ = [
     "SelectionScorer",
     "AutoSelectionScorer",
     "Featurizer",
-    "ModelRepository",
     "Policy",
+    "PyTorchPolicy",
+    "PyTorchFeatureEmbedder",
+    "embed",
+    "ModelRepository",
     "VwPolicy",
     "VwLogger",
-    "embed",
 ]
